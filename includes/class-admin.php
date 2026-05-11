@@ -1070,17 +1070,22 @@ class RHCM_Admin {
         <div class="rhcm-help-card">
             <div class="rhcm-help-card-header">
                 <code class="rhcm-sc-code">[rhcm_courses]</code>
-                <span class="rhcm-help-badge">All Courses by Category</span>
+                <span class="rhcm-help-badge">Courses by Category</span>
             </div>
             <p class="rhcm-help-desc">
-                Displays all active courses grouped by category. Each category gets a coloured heading and a responsive grid of course cards.
-                Each card shows the title, price &amp; duration pill, description, bullet points (if set), and a <strong>View Schedule &rarr;</strong> link.
-                Ideal for a full courses overview page.
+                Displays active courses as session-style cards (title, price, duration, level, description, <strong>View Schedule &rarr;</strong> button).
+                Without <code>category</code>: shows all courses grouped under coloured category headings.
+                With <code>category</code>: shows only that category's courses as a flat card grid — no heading.
             </p>
             <h4 class="rhcm-help-params-title">Parameters</h4>
             <table class="rhcm-help-table">
                 <thead><tr><th>Parameter</th><th>Default</th><th>Description</th></tr></thead>
                 <tbody>
+                    <tr>
+                        <td><code>category</code></td>
+                        <td><em>all</em></td>
+                        <td>Filter to a single category. Use the key values from the Category Reference table above.</td>
+                    </tr>
                     <tr>
                         <td><code>schedule_url</code></td>
                         <td><code>/schedule</code></td>
@@ -1092,11 +1097,15 @@ class RHCM_Admin {
             <div class="rhcm-help-examples">
                 <div class="rhcm-help-example">
                     <code class="rhcm-copy-code">[rhcm_courses]</code>
-                    <span>All courses grouped by category, linking to /schedule</span>
+                    <span>All courses grouped by category</span>
                 </div>
                 <div class="rhcm-help-example">
-                    <code class="rhcm-copy-code">[rhcm_courses schedule_url="/book"]</code>
-                    <span>Link the button to /book instead</span>
+                    <code class="rhcm-copy-code">[rhcm_courses category="wingsurfing"]</code>
+                    <span>Only Wingsurfing courses, flat grid</span>
+                </div>
+                <div class="rhcm-help-example">
+                    <code class="rhcm-copy-code">[rhcm_courses category="windsurfing" schedule_url="/book"]</code>
+                    <span>Windsurfing courses, linking to /book</span>
                 </div>
             </div>
         </div>

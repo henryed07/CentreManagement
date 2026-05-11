@@ -478,99 +478,83 @@ class RHCM_Shortcodes {
         return ob_get_clean();
     }
 
-    // ── [rhcm_courses schedule_url="/schedule"] ───────────────────────────────
+    // ── [rhcm_courses category="" schedule_url="/schedule"] ──────────────────
 
     public function render_courses( array $atts ) {
         $atts = shortcode_atts( [
+            'category'     => '',
             'schedule_url' => '/schedule',
         ], $atts );
 
-        $courses = RHCM_DB::get_courses( [ 'is_active' => 1 ] );
+        $query = [ 'is_active' => 1 ];
+        if ( $atts['category'] ) $query['category'] = sanitize_text_field( $atts['category'] );
+
+        $courses = RHCM_DB::get_courses( $query );
         if ( empty( $courses ) ) return '<p>No courses available yet.</p>';
 
         $colors = RHCM_DB::category_colors();
         $labels = RHCM_DB::category_labels();
 
-        // Group by category, preserving label order
+        // Group by category in label order; single-category skips headings
+        $single_cat = ! empty( $atts['category'] );
+
         $grouped = [];
-        foreach ( $labels as $key => $label ) {
-            $grouped[ $key ] = [];
-        }
+        foreach ( $labels as $key => $label ) $grouped[ $key ] = [];
         foreach ( $courses as $c ) {
             $cat = $c['category'];
             if ( ! isset( $grouped[ $cat ] ) ) $grouped[ $cat ] = [];
             $grouped[ $cat ][] = $c;
         }
-        // Remove empty categories
         $grouped = array_filter( $grouped );
 
         ob_start();
         ?>
         <div class="rhcm-courses-wrap">
         <?php foreach ( $grouped as $cat_key => $cat_courses ):
-            $label = $labels[ $cat_key ] ?? ucfirst( $cat_key );
+            $label = $labels[ $cat_key ] ?? ucfirst( str_replace( '_', ' ', $cat_key ) );
             $color = $colors[ $cat_key ] ?? '#0a2342';
         ?>
         <div class="rhcm-cat-section">
+
+            <?php if ( ! $single_cat ): ?>
             <div class="rhcm-cat-heading">
                 <span class="rhcm-cat-dot" style="background:<?= esc_attr( $color ) ?>"></span>
                 <h3><?= esc_html( $label ) ?></h3>
             </div>
-            <div class="rhcm-courses-grid">
+            <?php endif; ?>
+
+            <div class="rhcm-session-grid">
             <?php foreach ( $cat_courses as $course ):
                 $price = (float) $course['price'];
-
-                // Pill: price + duration
-                $pill_parts = [];
-                if ( $price > 0 )          $pill_parts[] = '&pound;' . number_format( $price, 0 );
-                if ( $course['duration'] ) $pill_parts[] = esc_html( $course['duration'] );
-                $pill_html = implode( ' &bull; ', $pill_parts );
-
-                // Description → paragraph + optional bullets
-                $desc_raw     = trim( $course['description'] ?? '' );
-                $desc_para    = '';
-                $desc_bullets = [];
-                if ( $desc_raw ) {
-                    $lines   = array_map( 'trim', explode( "\n", $desc_raw ) );
-                    $groups  = [];
-                    $current = [];
-                    foreach ( $lines as $line ) {
-                        if ( $line === '' ) {
-                            if ( ! empty( $current ) ) { $groups[] = $current; $current = []; }
-                        } else {
-                            $current[] = $line;
-                        }
-                    }
-                    if ( ! empty( $current ) ) $groups[] = $current;
-                    $desc_para    = isset( $groups[0] ) ? implode( ' ', $groups[0] ) : '';
-                    $desc_bullets = $groups[1] ?? [];
-                }
+                $icon  = $course['icon'] ? esc_html( $course['icon'] ) . ' ' : '';
+                $desc  = esc_html( $course['description'] ?? '' );
             ?>
-            <div class="rhcm-course-card-overview" style="border-top-color:<?= esc_attr( $color ) ?>">
-                <h2 class="rhcm-cco-title"><?= esc_html( $course['title'] ) ?></h2>
+            <div class="rhcm-session-card" style="border-top-color:<?= esc_attr( $color ) ?>">
+                <div class="rhcm-sc-header">
+                    <h3><?= $icon ?><?= esc_html( $course['title'] ) ?></h3>
+                    <?php if ( $price > 0 ): ?>
+                    <span class="rhcm-price">&pound;<?= number_format( $price, 0 ) ?></span>
+                    <?php endif; ?>
+                </div>
 
-                <?php if ( $pill_html ): ?>
-                <div class="rhcm-cco-pill"><?= $pill_html ?></div>
+                <div class="rhcm-meta">
+                    <?php if ( $course['duration'] ): ?><span>&#9201; <?= esc_html( $course['duration'] ) ?></span><?php endif; ?>
+                    <?php if ( $course['level'] ):    ?><span><?= esc_html( $course['level'] ) ?></span><?php endif; ?>
+                    <?php if ( $course['rya_cert'] ): ?><span>&#127903; <?= esc_html( $course['rya_cert'] ) ?></span><?php endif; ?>
+                    <?php if ( $course['max_participants'] ): ?><span>&#128101; Max <?= (int) $course['max_participants'] ?></span><?php endif; ?>
+                </div>
+
+                <?php if ( $desc ): ?>
+                <p class="rhcm-desc"><?= $desc ?></p>
                 <?php endif; ?>
 
-                <?php if ( $desc_para ): ?>
-                <p class="rhcm-cco-desc"><?= esc_html( $desc_para ) ?></p>
-                <?php endif; ?>
-
-                <?php if ( ! empty( $desc_bullets ) ): ?>
-                <ul class="rhcm-cco-bullets">
-                    <?php foreach ( $desc_bullets as $bullet ): ?>
-                    <li><?= esc_html( $bullet ) ?></li>
-                    <?php endforeach; ?>
-                </ul>
-                <?php endif; ?>
-
-                <a href="<?= esc_url( $atts['schedule_url'] ) ?>" class="rhcm-btn rhcm-btn-primary rhcm-cco-cta">
+                <a href="<?= esc_url( $atts['schedule_url'] ) ?>" class="rhcm-btn rhcm-btn-primary rhcm-btn-full">
                     View Schedule &rarr;
                 </a>
             </div>
             <?php endforeach; ?>
             </div>
+
         </div>
         <?php endforeach; ?>
         </div>
