@@ -622,6 +622,72 @@
 }
 .rhcm-mem-cta .rhcm-btn:hover { opacity: .88; }
 
+/* ── Course card overview [rhcm_course_card] ──────────────────── */
+.rhcm-course-card-overview {
+    background: #fff;
+    border-radius: var(--rhcm-radius);
+    border-top: 4px solid var(--rhcm-navy);
+    box-shadow: 0 2px 12px rgba(0,0,0,.08);
+    padding: 28px 30px 26px;
+    max-width: 560px;
+}
+
+.rhcm-cco-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.rhcm-cco-title {
+    color: var(--rhcm-navy);
+    font-size: 1.45rem;
+    font-weight: 700;
+    margin: 0;
+    line-height: 1.25;
+}
+
+.rhcm-cco-price {
+    font-size: 2.2rem;
+    font-weight: 800;
+    color: var(--rhcm-gold);
+    line-height: 1;
+    white-space: nowrap;
+}
+.rhcm-cco-price::before { content: ''; }
+
+.rhcm-cco-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.rhcm-cco-tag {
+    background: var(--rhcm-offwhite);
+    color: var(--rhcm-navy);
+    border: 1.5px solid var(--rhcm-light);
+    border-radius: 20px;
+    padding: 4px 14px;
+    font-size: .8rem;
+    font-weight: 600;
+}
+
+.rhcm-cco-desc {
+    color: #374151;
+    font-size: .92rem;
+    line-height: 1.65;
+    margin: 0 0 22px;
+}
+
+.rhcm-cco-cta {
+    display: inline-block;
+    font-size: .95rem;
+    font-weight: 700;
+    text-decoration: none;
+}
+
 /* ── Responsive ───────────────────────────────────────────────── */
 @media (max-width: 600px) {
     .rhcm-cal-day { min-height: 50px; }

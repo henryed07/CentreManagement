@@ -1006,6 +1006,66 @@ class RHCM_Admin {
             <?php endif; ?>
         </div>
 
+        <!-- ── [rhcm_course_card] ── -->
+        <div class="rhcm-help-card">
+            <div class="rhcm-help-card-header">
+                <code class="rhcm-sc-code">[rhcm_course_card id="X"]</code>
+                <span class="rhcm-help-badge">Course Overview Card</span>
+            </div>
+            <p class="rhcm-help-desc">
+                Displays a single compact card for one course showing its title, price, duration, level, RYA certification,
+                description, and a <strong>View Schedule &rarr;</strong> link that takes visitors to your bookings page.
+                Use this on a homepage, course overview, or marketing page to highlight a specific course.
+            </p>
+
+            <h4 class="rhcm-help-params-title">Parameters</h4>
+            <table class="rhcm-help-table">
+                <thead><tr><th>Parameter</th><th>Default</th><th>Required</th><th>Description</th></tr></thead>
+                <tbody>
+                    <tr>
+                        <td><code>id</code></td>
+                        <td>&mdash;</td>
+                        <td><span class="rhcm-required">Yes</span></td>
+                        <td>The numeric ID of the course. See the Course IDs table above.</td>
+                    </tr>
+                    <tr>
+                        <td><code>schedule_url</code></td>
+                        <td><code>/schedule</code></td>
+                        <td>No</td>
+                        <td>The URL the "View Schedule" button links to. Set this to the page where you have placed <code>[rhcm_schedule]</code>.</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h4 class="rhcm-help-params-title">Examples</h4>
+            <div class="rhcm-help-examples">
+                <div class="rhcm-help-example">
+                    <code>[rhcm_course_card id="3"]</code>
+                    <span>Show the overview card for course #3, linking to /schedule</span>
+                </div>
+                <div class="rhcm-help-example">
+                    <code>[rhcm_course_card id="3" schedule_url="/book"]</code>
+                    <span>Link the button to /book instead</span>
+                </div>
+            </div>
+
+            <?php if ( $courses ): ?>
+            <h4 class="rhcm-help-params-title">Your Course IDs</h4>
+            <table class="rhcm-help-table">
+                <thead><tr><th>ID</th><th>Course</th><th>Shortcode</th></tr></thead>
+                <tbody>
+                <?php foreach ( $courses as $c ): ?>
+                <tr>
+                    <td><strong><?= (int) $c['id'] ?></strong></td>
+                    <td><?= esc_html( $c['icon'] . ' ' . $c['title'] ) ?></td>
+                    <td><code class="rhcm-copy-code" title="Click to copy">[rhcm_course_card id="<?= (int) $c['id'] ?>"]</code></td>
+                </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+            <?php endif; ?>
+        </div>
+
         <!-- ── [rhcm_memberships] ── -->
         <div class="rhcm-help-card">
             <div class="rhcm-help-card-header">

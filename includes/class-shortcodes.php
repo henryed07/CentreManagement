@@ -4,9 +4,10 @@ defined( 'ABSPATH' ) || exit;
 class RHCM_Shortcodes {
 
     public function __construct() {
-        add_shortcode( 'rhcm_schedule',    [ $this, 'render_schedule' ] );
-        add_shortcode( 'rhcm_course',      [ $this, 'render_course' ] );
-        add_shortcode( 'rhcm_memberships', [ $this, 'render_memberships' ] );
+        add_shortcode( 'rhcm_schedule',     [ $this, 'render_schedule' ] );
+        add_shortcode( 'rhcm_course',       [ $this, 'render_course' ] );
+        add_shortcode( 'rhcm_course_card',  [ $this, 'render_course_card' ] );
+        add_shortcode( 'rhcm_memberships',  [ $this, 'render_memberships' ] );
         add_action( 'wp_enqueue_scripts', [ $this, 'enqueue' ] );
         add_action( 'init',              [ $this, 'handle_booking_post' ] );
         add_action( 'wp_ajax_rhcm_validate_discount',        [ $this, 'ajax_validate_discount' ] );
@@ -16,7 +17,7 @@ class RHCM_Shortcodes {
     public function enqueue() {
         global $post;
         if ( ! $post ) return;
-        if ( has_shortcode( $post->post_content, 'rhcm_schedule' ) || has_shortcode( $post->post_content, 'rhcm_course' ) ) {
+        if ( has_shortcode( $post->post_content, 'rhcm_schedule' ) || has_shortcode( $post->post_content, 'rhcm_course' ) || has_shortcode( $post->post_content, 'rhcm_course_card' ) ) {
             wp_enqueue_style(  'rhcm-frontend', RHCM_URL . 'assets/css/frontend.css', [], RHCM_VERSION );
             wp_enqueue_script( 'rhcm-frontend', RHCM_URL . 'assets/js/frontend.js',  [], RHCM_VERSION, true );
             wp_localize_script( 'rhcm-frontend', 'RHCM', [
@@ -404,6 +405,53 @@ class RHCM_Shortcodes {
         echo $this->cart_html( $page_url );
         echo $this->checkout_modal_html( $page_url );
 
+        return ob_get_clean();
+    }
+
+    // ── [rhcm_course_card id="X" schedule_url="/schedule"] ───────────────────
+
+    public function render_course_card( array $atts ) {
+        $atts = shortcode_atts( [
+            'id'           => 0,
+            'schedule_url' => '/schedule',
+        ], $atts );
+
+        $course = RHCM_DB::get_course( (int) $atts['id'] );
+        if ( ! $course || ! $course['is_active'] ) return '';
+
+        $price    = (float) $course['price'];
+        $icon     = $course['icon']     ? esc_html( $course['icon'] ) . ' ' : '';
+        $color    = RHCM_DB::category_colors()[$course['category']] ?? '#0a2342';
+
+        ob_start();
+        ?>
+        <div class="rhcm-course-card-overview" style="border-top-color:<?= esc_attr( $color ) ?>">
+            <div class="rhcm-cco-header">
+                <h2 class="rhcm-cco-title"><?= $icon ?><?= esc_html( $course['title'] ) ?></h2>
+                <div class="rhcm-cco-price">&pound;<?= esc_html( number_format( $price, 0 ) ) ?></div>
+            </div>
+
+            <div class="rhcm-cco-tags">
+                <?php if ( $course['duration'] ): ?>
+                <span class="rhcm-cco-tag">&#9201; <?= esc_html( $course['duration'] ) ?></span>
+                <?php endif; ?>
+                <?php if ( $course['level'] ): ?>
+                <span class="rhcm-cco-tag"><?= esc_html( $course['level'] ) ?></span>
+                <?php endif; ?>
+                <?php if ( $course['rya_cert'] ): ?>
+                <span class="rhcm-cco-tag">&#127903; <?= esc_html( $course['rya_cert'] ) ?></span>
+                <?php endif; ?>
+            </div>
+
+            <?php if ( $course['description'] ): ?>
+            <p class="rhcm-cco-desc"><?= esc_html( $course['description'] ) ?></p>
+            <?php endif; ?>
+
+            <a href="<?= esc_url( $atts['schedule_url'] ) ?>" class="rhcm-btn rhcm-btn-primary rhcm-cco-cta">
+                View Schedule &rarr;
+            </a>
+        </div>
+        <?php
         return ob_get_clean();
     }
 
