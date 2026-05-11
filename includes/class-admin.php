@@ -1110,6 +1110,40 @@ class RHCM_Admin {
             </div>
         </div>
 
+        <!-- ── [rhcm_tag] ── -->
+        <div class="rhcm-help-card">
+            <div class="rhcm-help-card-header">
+                <code class="rhcm-sc-code">[rhcm_tag category="X"]</code>
+                <span class="rhcm-help-badge">Category Badge</span>
+            </div>
+            <p class="rhcm-help-desc">
+                Renders a small inline coloured pill badge showing the category name. Drop it anywhere in page content — headings, paragraphs, buttons — to label a course category.
+            </p>
+            <h4 class="rhcm-help-params-title">Parameters</h4>
+            <table class="rhcm-help-table">
+                <thead><tr><th>Parameter</th><th>Required</th><th>Description</th></tr></thead>
+                <tbody>
+                    <tr>
+                        <td><code>category</code></td>
+                        <td><span class="rhcm-required">Yes</span></td>
+                        <td>The category key. See the Category Values reference below.</td>
+                    </tr>
+                </tbody>
+            </table>
+            <h4 class="rhcm-help-params-title">Quick Reference</h4>
+            <div class="rhcm-help-examples" style="flex-wrap:wrap">
+                <?php foreach ( $cats as $key => $label ):
+                    $cat_colors = RHCM_DB::category_colors();
+                    $bg = $cat_colors[ $key ] ?? '#0a2342';
+                ?>
+                <div class="rhcm-help-example" style="align-items:center">
+                    <code class="rhcm-copy-code" title="Click to copy">[rhcm_tag category="<?= esc_attr( $key ) ?>"]</code>
+                    <span style="background:<?= esc_attr($bg) ?>;color:#fff;font-size:.75rem;font-weight:700;padding:3px 12px;border-radius:100px;letter-spacing:.04em;text-transform:uppercase"><?= esc_html( $label ) ?></span>
+                </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+
         <!-- ── [rhcm_memberships] ── -->
         <div class="rhcm-help-card">
             <div class="rhcm-help-card-header">

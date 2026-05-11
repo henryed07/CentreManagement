@@ -683,6 +683,20 @@
 }
 .rhcm-cco-cta:hover { background: #b8941f; color: var(--rhcm-navy); opacity: 1; }
 
+/* ── Category tag badge [rhcm_tag] ───────────────────────────── */
+.rhcm-cat-tag {
+    display: inline-block;
+    color: #fff;
+    font-size: .8rem;
+    font-weight: 700;
+    padding: 4px 14px;
+    border-radius: 100px;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    vertical-align: middle;
+    line-height: 1.4;
+}
+
 /* ── Courses by category [rhcm_courses] ──────────────────────── */
 .rhcm-courses-wrap { display: flex; flex-direction: column; gap: 48px; }
 

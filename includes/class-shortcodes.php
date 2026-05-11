@@ -8,6 +8,7 @@ class RHCM_Shortcodes {
         add_shortcode( 'rhcm_course',       [ $this, 'render_course' ] );
         add_shortcode( 'rhcm_course_card',  [ $this, 'render_course_card' ] );
         add_shortcode( 'rhcm_courses',      [ $this, 'render_courses' ] );
+        add_shortcode( 'rhcm_tag',          [ $this, 'render_tag' ] );
         add_shortcode( 'rhcm_memberships',  [ $this, 'render_memberships' ] );
         add_action( 'wp_enqueue_scripts', [ $this, 'enqueue' ] );
         add_action( 'init',              [ $this, 'handle_booking_post' ] );
@@ -18,7 +19,12 @@ class RHCM_Shortcodes {
     public function enqueue() {
         global $post;
         if ( ! $post ) return;
-        if ( has_shortcode( $post->post_content, 'rhcm_schedule' ) || has_shortcode( $post->post_content, 'rhcm_course' ) || has_shortcode( $post->post_content, 'rhcm_course_card' ) || has_shortcode( $post->post_content, 'rhcm_courses' ) ) {
+        $shortcodes = [ 'rhcm_schedule', 'rhcm_course', 'rhcm_course_card', 'rhcm_courses', 'rhcm_tag' ];
+        $needs_assets = false;
+        foreach ( $shortcodes as $sc ) {
+            if ( has_shortcode( $post->post_content, $sc ) ) { $needs_assets = true; break; }
+        }
+        if ( $needs_assets ) {
             wp_enqueue_style(  'rhcm-frontend', RHCM_URL . 'assets/css/frontend.css', [], RHCM_VERSION );
             wp_enqueue_script( 'rhcm-frontend', RHCM_URL . 'assets/js/frontend.js',  [], RHCM_VERSION, true );
             wp_localize_script( 'rhcm-frontend', 'RHCM', [
@@ -544,6 +550,24 @@ class RHCM_Shortcodes {
         $code        = sanitize_text_field( $_POST['code'] ?? '' );
         $session_ids = array_map( 'intval', (array) ( $_POST['session_ids'] ?? [] ) );
         wp_send_json( RHCM_DB::validate_discount( $code, $session_ids ) );
+    }
+
+    // ── [rhcm_tag category="X"] ───────────────────────────────────────────────
+
+    public function render_tag( array $atts ) {
+        $atts = shortcode_atts( [ 'category' => '' ], $atts );
+        $cat  = sanitize_text_field( $atts['category'] );
+        if ( ! $cat ) return '';
+
+        $colors = RHCM_DB::category_colors();
+        $labels = RHCM_DB::category_labels();
+
+        if ( ! isset( $labels[ $cat ] ) ) return '';
+
+        $label = $labels[ $cat ];
+        $color = $colors[ $cat ] ?? '#0a2342';
+
+        return '<span class="rhcm-cat-tag" style="background:' . esc_attr( $color ) . '">' . esc_html( $label ) . '</span>';
     }
 
     // ── [rhcm_memberships] ─────────────────────────────────────────────────────
