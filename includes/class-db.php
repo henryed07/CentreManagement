@@ -478,6 +478,8 @@ UNIQUE KEY code (code)
 
     public static function category_colors() {
         return [
+            'sailing'      => '#0a2342',
+            'keelboat'     => '#3a8a5a',
             'windsurfing'  => '#4a9eca',
             'wingsurfing'  => '#2a9d8f',
             'sup'          => '#e07b39',
@@ -489,6 +491,8 @@ UNIQUE KEY code (code)
 
     public static function category_labels() {
         return [
+            'sailing'      => 'Sailing',
+            'keelboat'     => 'Keelboat',
             'windsurfing'  => 'Windsurfing',
             'wingsurfing'  => 'Wingsurfing',
             'sup'          => 'Stand Up Paddle',
