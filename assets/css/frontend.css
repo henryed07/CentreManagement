@@ -618,6 +618,7 @@
     color: var(--rhcm-navy);
     font-weight: 700;
     border-radius: 10px;
+    border: 2.5px solid var(--rhcm-navy);
 }
 .rhcm-mem-cta .rhcm-btn:hover { opacity: .88; }
 
