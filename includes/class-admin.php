@@ -1066,6 +1066,41 @@ class RHCM_Admin {
             <?php endif; ?>
         </div>
 
+        <!-- ── [rhcm_courses] ── -->
+        <div class="rhcm-help-card">
+            <div class="rhcm-help-card-header">
+                <code class="rhcm-sc-code">[rhcm_courses]</code>
+                <span class="rhcm-help-badge">All Courses by Category</span>
+            </div>
+            <p class="rhcm-help-desc">
+                Displays all active courses grouped by category. Each category gets a coloured heading and a responsive grid of course cards.
+                Each card shows the title, price &amp; duration pill, description, bullet points (if set), and a <strong>View Schedule &rarr;</strong> link.
+                Ideal for a full courses overview page.
+            </p>
+            <h4 class="rhcm-help-params-title">Parameters</h4>
+            <table class="rhcm-help-table">
+                <thead><tr><th>Parameter</th><th>Default</th><th>Description</th></tr></thead>
+                <tbody>
+                    <tr>
+                        <td><code>schedule_url</code></td>
+                        <td><code>/schedule</code></td>
+                        <td>URL the "View Schedule" button links to on every card.</td>
+                    </tr>
+                </tbody>
+            </table>
+            <h4 class="rhcm-help-params-title">Examples</h4>
+            <div class="rhcm-help-examples">
+                <div class="rhcm-help-example">
+                    <code class="rhcm-copy-code">[rhcm_courses]</code>
+                    <span>All courses grouped by category, linking to /schedule</span>
+                </div>
+                <div class="rhcm-help-example">
+                    <code class="rhcm-copy-code">[rhcm_courses schedule_url="/book"]</code>
+                    <span>Link the button to /book instead</span>
+                </div>
+            </div>
+        </div>
+
         <!-- ── [rhcm_memberships] ── -->
         <div class="rhcm-help-card">
             <div class="rhcm-help-card-header">
