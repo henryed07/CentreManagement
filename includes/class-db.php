@@ -480,25 +480,27 @@ UNIQUE KEY code (code)
         return [
             'sailing'      => '#0a2342',
             'keelboat'     => '#3a8a5a',
+            'powerboat'    => '#c0392b',
             'windsurfing'  => '#4a9eca',
             'wingsurfing'  => '#2a9d8f',
             'sup'          => '#e07b39',
-            'board_hire'   => '#7f8c8d',
             'wind_foiling' => '#8e44ad',
             'wing_foiling' => '#c8a84b',
+            'board_hire'   => '#7f8c8d',
         ];
     }
 
     public static function category_labels() {
         return [
-            'sailing'      => 'Sailing',
-            'keelboat'     => 'Keelboat',
-            'windsurfing'  => 'Windsurfing',
-            'wingsurfing'  => 'Wingsurfing',
-            'sup'          => 'Stand Up Paddle',
+            'sailing'      => 'RYA Dinghy Sailing',
+            'keelboat'     => 'RYA Keelboat',
+            'powerboat'    => 'RYA Powerboat',
+            'windsurfing'  => 'RYA Windsurfing',
+            'wingsurfing'  => 'RYA Wingsurfing',
+            'sup'          => 'RYA Stand Up Paddle',
+            'wind_foiling' => 'RYA Wind Foiling',
+            'wing_foiling' => 'RYA Wing Foiling',
             'board_hire'   => 'Board Hire',
-            'wind_foiling' => 'Wind Foiling',
-            'wing_foiling' => 'Wing Foiling',
         ];
     }
 }
