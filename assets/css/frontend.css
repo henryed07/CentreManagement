@@ -628,8 +628,8 @@
     border-radius: 16px;
     border-top: 4px solid var(--rhcm-navy);
     box-shadow: 0 4px 20px rgba(0,0,0,.10);
-    padding: 32px 28px 28px;
-    max-width: 420px;
+    padding: 24px 20px 22px;
+    max-width: 240px;
     box-sizing: border-box;
 }
 
