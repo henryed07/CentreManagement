@@ -478,27 +478,23 @@ UNIQUE KEY code (code)
 
     public static function category_colors() {
         return [
-            'adult'      => '#0a2342',
-            'board'      => '#4a9eca',
-            'racing'     => '#c8a84b',
-            'junior'     => '#e07b39',
-            'youth'      => '#c0392b',
-            'keelboat'   => '#3a8a5a',
-            'watersports'=> '#4a9eca',
-            'shore'      => '#7f8c8d',
+            'windsurfing'  => '#4a9eca',
+            'wingsurfing'  => '#2a9d8f',
+            'sup'          => '#e07b39',
+            'board_hire'   => '#7f8c8d',
+            'wind_foiling' => '#8e44ad',
+            'wing_foiling' => '#c8a84b',
         ];
     }
 
     public static function category_labels() {
         return [
-            'adult'      => 'Sailing',
-            'board'      => 'Windsurfing & Board',
-            'racing'     => 'Racing',
-            'shore'      => 'Shore Based',
-            'junior'     => 'Junior',
-            'youth'      => 'Youth',
-            'keelboat'   => 'Keelboat',
-            'watersports'=> 'Watersports',
+            'windsurfing'  => 'Windsurfing',
+            'wingsurfing'  => 'Wingsurfing',
+            'sup'          => 'Stand Up Paddle',
+            'board_hire'   => 'Board Hire',
+            'wind_foiling' => 'Wind Foiling',
+            'wing_foiling' => 'Wing Foiling',
         ];
     }
 }
