@@ -276,8 +276,9 @@ class RHCM_Shortcodes {
                 <?php if ( $s['duration'] ): ?><span>&#9201; <?= esc_html( $s['duration'] ) ?></span><?php endif; ?>
                 <?php if ( $s['level'] ):    ?><span><?= esc_html( $s['level'] ) ?></span><?php endif; ?>
                 <?php if ( $s['rya_cert'] ): ?><span>&#127903; <?= esc_html( $s['rya_cert'] ) ?></span><?php endif; ?>
+                <?php if ( $s['total_spaces'] ): ?><span>&#128101; Max <?= (int) $s['total_spaces'] ?></span><?php endif; ?>
             </div>
-            <p class="rhcm-desc"><?= esc_html( $s['description'] ) ?></p>
+            <?php if ( $s['description'] ): ?><p class="rhcm-desc"><?= esc_html( $s['description'] ) ?></p><?php endif; ?>
             <?php if ( $s['notes'] ): ?><p class="rhcm-session-note">&#8505; <?= esc_html( $s['notes'] ) ?></p><?php endif; ?>
 
             <div class="rhcm-cap-bar"><div class="rhcm-cap-fill" style="width:<?= $pct ?>%;background:<?= $bar_col ?>"></div></div>
@@ -375,8 +376,9 @@ class RHCM_Shortcodes {
                 <?php if ( $s['duration'] ): ?><span>&#9201; <?= esc_html( $s['duration'] ) ?></span><?php endif; ?>
                 <?php if ( $s['level'] ):    ?><span><?= esc_html( $s['level'] ) ?></span><?php endif; ?>
                 <?php if ( $s['rya_cert'] ): ?><span>&#127903; <?= esc_html( $s['rya_cert'] ) ?></span><?php endif; ?>
+                <?php if ( $s['total_spaces'] ): ?><span>&#128101; Max <?= (int) $s['total_spaces'] ?></span><?php endif; ?>
             </div>
-            <p class="rhcm-desc"><?= esc_html( $s['description'] ) ?></p>
+            <?php if ( $s['description'] ): ?><p class="rhcm-desc"><?= esc_html( $s['description'] ) ?></p><?php endif; ?>
             <?php if ( $s['notes'] ): ?><p class="rhcm-session-note">&#8505; <?= esc_html( $s['notes'] ) ?></p><?php endif; ?>
 
             <div class="rhcm-cap-bar"><div class="rhcm-cap-fill" style="width:<?= $pct ?>%;background:<?= $bar_col ?>"></div></div>
