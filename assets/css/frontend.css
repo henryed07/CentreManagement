@@ -625,68 +625,68 @@
 /* ── Course card overview [rhcm_course_card] ──────────────────── */
 .rhcm-course-card-overview {
     background: #fff;
-    border-radius: var(--rhcm-radius);
+    border-radius: 16px;
     border-top: 4px solid var(--rhcm-navy);
-    box-shadow: 0 2px 12px rgba(0,0,0,.08);
-    padding: 28px 30px 26px;
-    max-width: 560px;
-}
-
-.rhcm-cco-header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 16px;
-    margin-bottom: 16px;
+    box-shadow: 0 4px 20px rgba(0,0,0,.10);
+    padding: 32px 28px 28px;
+    max-width: 420px;
+    box-sizing: border-box;
 }
 
 .rhcm-cco-title {
     color: var(--rhcm-navy);
-    font-size: 1.45rem;
+    font-size: 1.5rem;
     font-weight: 700;
-    margin: 0;
+    margin: 0 0 20px;
     line-height: 1.25;
 }
 
-.rhcm-cco-price {
-    font-size: 2.2rem;
-    font-weight: 800;
+.rhcm-cco-pill {
+    display: inline-block;
+    background: var(--rhcm-navy);
     color: var(--rhcm-gold);
+    border-radius: 100px;
+    padding: 10px 22px;
+    font-size: .93rem;
+    font-weight: 700;
+    margin-bottom: 20px;
     line-height: 1;
-    white-space: nowrap;
-}
-.rhcm-cco-price::before { content: ''; }
-
-.rhcm-cco-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 16px;
-}
-
-.rhcm-cco-tag {
-    background: var(--rhcm-offwhite);
-    color: var(--rhcm-navy);
-    border: 1.5px solid var(--rhcm-light);
-    border-radius: 20px;
-    padding: 4px 14px;
-    font-size: .8rem;
-    font-weight: 600;
 }
 
 .rhcm-cco-desc {
     color: #374151;
-    font-size: .92rem;
+    font-size: .94rem;
     line-height: 1.65;
-    margin: 0 0 22px;
+    margin: 0 0 18px;
+}
+
+.rhcm-cco-bullets {
+    list-style: disc;
+    padding-left: 22px;
+    margin: 0 0 26px;
+    color: var(--rhcm-navy);
+}
+.rhcm-cco-bullets li {
+    font-size: .92rem;
+    line-height: 1.5;
+    padding: 3px 0;
 }
 
 .rhcm-cco-cta {
-    display: inline-block;
-    font-size: .95rem;
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    text-align: center;
+    background: var(--rhcm-gold);
+    color: var(--rhcm-navy);
     font-weight: 700;
+    font-size: 1rem;
+    padding: 17px;
+    border-radius: 12px;
     text-decoration: none;
+    transition: opacity .15s;
 }
+.rhcm-cco-cta:hover { opacity: .88; color: var(--rhcm-navy); }
 
 /* ── Responsive ───────────────────────────────────────────────── */
 @media (max-width: 600px) {

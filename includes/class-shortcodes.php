@@ -419,35 +419,57 @@ class RHCM_Shortcodes {
         $course = RHCM_DB::get_course( (int) $atts['id'] );
         if ( ! $course || ! $course['is_active'] ) return '';
 
-        $price    = (float) $course['price'];
-        $icon     = $course['icon']     ? esc_html( $course['icon'] ) . ' ' : '';
-        $color    = RHCM_DB::category_colors()[$course['category']] ?? '#0a2342';
+        $price = (float) $course['price'];
+        $color = RHCM_DB::category_colors()[$course['category']] ?? '#0a2342';
+
+        // Build price/duration pill text
+        $pill_parts = [];
+        if ( $price > 0 )        $pill_parts[] = '&pound;' . number_format( $price, 0 );
+        if ( $course['duration'] ) $pill_parts[] = esc_html( $course['duration'] );
+        $pill_html = implode( ' &bull; ', $pill_parts );
+
+        // Split description into intro paragraph + optional bullet lines (blank-line separator)
+        $desc_raw   = trim( $course['description'] ?? '' );
+        $desc_para  = '';
+        $desc_bullets = [];
+        if ( $desc_raw ) {
+            $lines   = array_map( 'trim', explode( "\n", $desc_raw ) );
+            $groups  = [];
+            $current = [];
+            foreach ( $lines as $line ) {
+                if ( $line === '' ) {
+                    if ( ! empty( $current ) ) { $groups[] = $current; $current = []; }
+                } else {
+                    $current[] = $line;
+                }
+            }
+            if ( ! empty( $current ) ) $groups[] = $current;
+            $desc_para    = isset( $groups[0] ) ? implode( ' ', $groups[0] ) : '';
+            $desc_bullets = $groups[1] ?? [];
+        }
 
         ob_start();
         ?>
         <div class="rhcm-course-card-overview" style="border-top-color:<?= esc_attr( $color ) ?>">
-            <div class="rhcm-cco-header">
-                <h2 class="rhcm-cco-title"><?= $icon ?><?= esc_html( $course['title'] ) ?></h2>
-                <div class="rhcm-cco-price">&pound;<?= esc_html( number_format( $price, 0 ) ) ?></div>
-            </div>
+            <h2 class="rhcm-cco-title"><?= esc_html( $course['title'] ) ?></h2>
 
-            <div class="rhcm-cco-tags">
-                <?php if ( $course['duration'] ): ?>
-                <span class="rhcm-cco-tag">&#9201; <?= esc_html( $course['duration'] ) ?></span>
-                <?php endif; ?>
-                <?php if ( $course['level'] ): ?>
-                <span class="rhcm-cco-tag"><?= esc_html( $course['level'] ) ?></span>
-                <?php endif; ?>
-                <?php if ( $course['rya_cert'] ): ?>
-                <span class="rhcm-cco-tag">&#127903; <?= esc_html( $course['rya_cert'] ) ?></span>
-                <?php endif; ?>
-            </div>
-
-            <?php if ( $course['description'] ): ?>
-            <p class="rhcm-cco-desc"><?= esc_html( $course['description'] ) ?></p>
+            <?php if ( $pill_html ): ?>
+            <div class="rhcm-cco-pill"><?= $pill_html ?></div>
             <?php endif; ?>
 
-            <a href="<?= esc_url( $atts['schedule_url'] ) ?>" class="rhcm-btn rhcm-btn-primary rhcm-cco-cta">
+            <?php if ( $desc_para ): ?>
+            <p class="rhcm-cco-desc"><?= esc_html( $desc_para ) ?></p>
+            <?php endif; ?>
+
+            <?php if ( ! empty( $desc_bullets ) ): ?>
+            <ul class="rhcm-cco-bullets">
+                <?php foreach ( $desc_bullets as $bullet ): ?>
+                <li><?= esc_html( $bullet ) ?></li>
+                <?php endforeach; ?>
+            </ul>
+            <?php endif; ?>
+
+            <a href="<?= esc_url( $atts['schedule_url'] ) ?>" class="rhcm-cco-cta">
                 View Schedule &rarr;
             </a>
         </div>
