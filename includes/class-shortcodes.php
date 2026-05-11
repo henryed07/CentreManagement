@@ -469,7 +469,7 @@ class RHCM_Shortcodes {
             </ul>
             <?php endif; ?>
 
-            <a href="<?= esc_url( $atts['schedule_url'] ) ?>" class="rhcm-cco-cta">
+            <a href="<?= esc_url( $atts['schedule_url'] ) ?>" class="rhcm-btn rhcm-btn-primary rhcm-cco-cta">
                 View Schedule &rarr;
             </a>
         </div>
