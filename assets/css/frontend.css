@@ -124,8 +124,14 @@
     box-shadow: 0 2px 8px rgba(0,0,0,.07);
     border-top: 4px solid var(--rhcm-navy);
     transition: transform .15s;
+    display: flex;
+    flex-direction: column;
 }
 .rhcm-session-card:hover { transform: translateY(-2px); }
+
+/* Push CTA button to bottom of every card */
+.rhcm-session-card > .rhcm-btn,
+.rhcm-card-content > .rhcm-btn { margin-top: auto; }
 .rhcm-sc-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
 .rhcm-sc-header h3 { color: var(--rhcm-navy); font-size: .97rem; margin: 0; }
 .rhcm-price { color: var(--rhcm-gold); font-weight: 700; font-size: 1.1rem; white-space: nowrap; }
@@ -529,137 +535,115 @@
     border-bottom: 1px solid var(--rhcm-light);
 }
 
-/* ── Membership categories wrap ───────────────────────────────── */
-.rhcm-mem-categories-wrap { display: flex; flex-direction: column; gap: 48px; }
-
-.rhcm-mem-cat-heading {
-    margin-bottom: 20px;
-    padding-bottom: 12px;
-    border-bottom: 2px solid var(--rhcm-light);
-}
-.rhcm-mem-cat-heading h3 {
-    margin: 0;
-    font-size: 1.2rem;
-    font-weight: 700;
-    color: var(--rhcm-navy);
-}
-
-.rhcm-mem-cat-banner {
-    width: 100%;
-    height: 200px;
-    background-size: cover;
-    background-position: center;
-    border-radius: var(--rhcm-radius);
-    overflow: hidden;
-    position: relative;
-    margin-bottom: 20px;
-    display: flex;
-    align-items: flex-end;
-}
-.rhcm-mem-cat-banner-overlay {
-    width: 100%;
-    padding: 16px 20px;
-    background: linear-gradient(transparent, rgba(0,0,0,.65));
-}
-.rhcm-mem-cat-banner-overlay h3 {
-    margin: 0;
-    color: #fff;
-    font-size: 1.25rem;
-    font-weight: 700;
-}
-
 /* ── Membership grid ──────────────────────────────────────────── */
 .rhcm-mem-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 24px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 20px;
 }
 
 /* ── Membership card ──────────────────────────────────────────── */
 .rhcm-mem-card {
-    width: 354px;
-    max-width: 100%;
     border-radius: 16px;
     overflow: hidden;
     background: #fff;
-    box-shadow: 0 4px 20px rgba(0,0,0,.12);
+    box-shadow: 0 2px 12px rgba(0,0,0,.10);
     display: flex;
     flex-direction: column;
     transition: transform .2s, box-shadow .2s;
 }
 .rhcm-mem-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 10px 30px rgba(0,0,0,.18);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(0,0,0,.16);
 }
 
-.rhcm-mem-photo {
-    height: 180px;
-    background-color: var(--rhcm-navy);
-    background-size: cover;
-    background-position: center;
+/* Navy price header */
+.rhcm-mem-price-header {
+    background: var(--rhcm-navy);
+    padding: 22px 18px 18px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 80px;
     position: relative;
-    flex-shrink: 0;
 }
 
 .rhcm-featured-badge {
     position: absolute;
-    top: 14px;
-    right: 14px;
+    top: 10px;
+    right: 12px;
     background: var(--rhcm-gold);
     color: var(--rhcm-navy);
-    font-size: .72rem;
+    font-size: .68rem;
     font-weight: 800;
-    padding: 5px 14px;
+    padding: 4px 12px;
     border-radius: 100px;
     letter-spacing: .08em;
     text-transform: uppercase;
-    z-index: 1;
 }
 
-.rhcm-mem-title-strip {
-    background: var(--rhcm-navy);
-    color: #fff;
-    text-align: center;
-    padding: 16px 20px 22px;
-    border-radius: 20px 20px 0 0;
-    margin-top: -20px;
-    position: relative;
+.rhcm-mem-price-display {
+    display: flex;
+    align-items: baseline;
+    gap: 2px;
 }
-.rhcm-mem-name {
-    font-size: 1.1rem;
-    font-weight: 700;
-    letter-spacing: .01em;
-    line-height: 1.3;
-    margin-bottom: 8px;
+.rhcm-mem-price {
+    font-size: 2.2rem;
+    font-weight: 800;
+    color: var(--rhcm-gold);
+    line-height: 1;
+    letter-spacing: -.02em;
+}
+.rhcm-mem-freq-inline {
+    font-size: .9rem;
+    color: rgba(255,255,255,.75);
+    font-weight: 400;
+}
+.rhcm-mem-contact-pill {
+    display: inline-block;
+    border: 1.5px solid rgba(255,255,255,.35);
+    color: rgba(255,255,255,.88);
+    border-radius: 100px;
+    padding: 7px 16px;
+    font-size: .82rem;
 }
 
+/* Card body */
 .rhcm-mem-body {
-    padding: 18px 22px 22px;
+    padding: 18px 20px 20px;
     flex: 1;
     display: flex;
     flex-direction: column;
 }
-
+.rhcm-mem-name {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--rhcm-navy);
+    margin: 0 0 8px;
+    line-height: 1.3;
+}
 .rhcm-mem-tagline {
-    font-size: .88rem;
+    font-size: .86rem;
     color: var(--rhcm-muted);
-    line-height: 1.6;
+    line-height: 1.55;
     margin: 0 0 16px;
+    flex: 1;
 }
 
 .rhcm-mem-features {
     list-style: none;
     padding: 0;
-    margin: 0 0 20px;
-    flex: 1;
+    margin: 0 0 16px;
 }
 .rhcm-mem-features li {
     display: flex;
     align-items: flex-start;
     gap: 9px;
-    padding: 8px 0;
+    padding: 7px 0;
     border-bottom: 1px solid var(--rhcm-light);
-    font-size: .88rem;
+    font-size: .86rem;
     color: #374151;
     line-height: 1.45;
 }
@@ -668,35 +652,21 @@
     content: '✓';
     color: var(--rhcm-gold);
     font-weight: 700;
-    font-size: .95rem;
+    font-size: .9rem;
     flex-shrink: 0;
     margin-top: 1px;
-}
-
-/* price + freq live inside the navy title strip */
-.rhcm-mem-price {
-    font-size: 1.6rem;
-    font-weight: 800;
-    color: var(--rhcm-gold);
-    line-height: 1.15;
-    letter-spacing: -.01em;
-}
-.rhcm-mem-freq {
-    font-size: .82rem;
-    color: rgba(255,255,255,.7);
-    margin-top: 3px;
 }
 
 .rhcm-mem-btn {
     display: block;
     width: 100%;
-    padding: 14px;
+    padding: 12px 16px;
     background: var(--rhcm-navy);
     color: #fff;
     text-align: center;
-    border-radius: 10px;
-    font-size: .92rem;
-    font-weight: 700;
+    border-radius: 8px;
+    font-size: .88rem;
+    font-weight: 600;
     text-decoration: none;
     cursor: pointer;
     font-family: inherit;
@@ -1061,6 +1031,8 @@
     .rhcm-cal-dot { width: 7px; height: 7px; }
     .rhcm-day-num { font-size: .72rem; }
     .rhcm-modal-box { padding: 22px 16px; }
-    .rhcm-mem-grid { justify-content: center; }
-    .rhcm-mem-card { width: 100%; max-width: 354px; }
+    .rhcm-mem-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 420px) {
+    .rhcm-mem-grid { grid-template-columns: 1fr; }
 }
