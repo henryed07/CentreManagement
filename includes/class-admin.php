@@ -17,6 +17,7 @@ class RHCM_Admin {
         add_action( 'admin_post_rhcm_save_discount',         [ $this, 'handle_save_discount' ] );
         add_action( 'admin_post_rhcm_delete_discount',       [ $this, 'handle_delete_discount' ] );
         add_action( 'admin_post_rhcm_save_category_images',  [ $this, 'handle_save_category_images' ] );
+        add_action( 'admin_post_rhcm_save_mem_categories',   [ $this, 'handle_save_mem_categories' ] );
     }
 
     public function register_menus() {
@@ -25,6 +26,7 @@ class RHCM_Admin {
         add_submenu_page( 'rhcm', 'Sessions', 'Sessions', 'manage_options', 'rhcm-sessions', [ $this, 'page_sessions' ] );
         add_submenu_page( 'rhcm', 'Bookings', 'Bookings', 'manage_options', 'rhcm-bookings', [ $this, 'page_bookings' ] );
         add_submenu_page( 'rhcm', 'Memberships', 'Memberships', 'manage_options', 'rhcm-memberships', [ $this, 'page_memberships' ] );
+        add_submenu_page( 'rhcm', 'Membership Categories', 'Membership Categories', 'manage_options', 'rhcm-mem-categories', [ $this, 'page_mem_categories' ] );
         add_submenu_page( 'rhcm', 'Discount Codes', 'Discount Codes', 'manage_options', 'rhcm-discounts', [ $this, 'page_discounts' ] );
         add_submenu_page( 'rhcm', 'Category Images', 'Category Images', 'manage_options', 'rhcm-category-images', [ $this, 'page_category_images' ] );
         add_submenu_page( 'rhcm', 'Shortcodes &amp; Help', 'Shortcodes &amp; Help', 'manage_options', 'rhcm-settings', [ $this, 'page_settings' ] );
@@ -675,7 +677,9 @@ class RHCM_Admin {
     }
 
     private function render_membership_form( array $m, string $notice ) {
-        $id = (int) ( $m['id'] ?? 0 );
+        $id       = (int) ( $m['id'] ?? 0 );
+        $mem_cats = RHCM_DB::get_mem_categories();
+        $has_img  = ! empty( $m['image_url'] );
         ?>
         <div class="wrap rhcm-wrap">
         <h1><?= $id ? 'Edit Membership' : 'Add Membership' ?></h1>
@@ -689,24 +693,32 @@ class RHCM_Admin {
 
             <div class="rhcm-form-grid">
                 <div class="rhcm-field">
-                    <label>Icon (emoji)</label>
-                    <input type="text" name="icon" value="<?= esc_attr( $m['icon'] ?? '' ) ?>" placeholder="⚓" style="max-width:80px">
-                </div>
-                <div class="rhcm-field">
                     <label>Sort Order</label>
                     <input type="number" name="sort_order" value="<?= esc_attr( $m['sort_order'] ?? 0 ) ?>" style="max-width:100px">
+                </div>
+                <div class="rhcm-field">
+                    <label>Category <small>(for grouping on front-end)</small></label>
+                    <select name="mem_category">
+                        <option value="">— no category —</option>
+                        <?php foreach ( $mem_cats as $key => $cat ): ?>
+                        <option value="<?= esc_attr( $key ) ?>" <?= selected( $m['mem_category'] ?? '', $key, false ) ?>><?= esc_html( $cat['label'] ?? $key ) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                    <?php if ( empty( $mem_cats ) ): ?>
+                    <small style="color:#6b7280">No categories yet. <a href="<?= esc_url( admin_url('admin.php?page=rhcm-mem-categories') ) ?>">Create some</a>.</small>
+                    <?php endif; ?>
                 </div>
                 <div class="rhcm-field rhcm-field-full">
                     <label>Name *</label>
                     <input type="text" name="name" value="<?= esc_attr( $m['name'] ?? '' ) ?>" required placeholder="e.g. Standard Membership">
                 </div>
                 <div class="rhcm-field rhcm-field-full">
-                    <label>Tagline <small>(short subtitle shown under the name)</small></label>
+                    <label>Tagline <small>(short description shown below the name)</small></label>
                     <input type="text" name="tagline" value="<?= esc_attr( $m['tagline'] ?? '' ) ?>" placeholder="e.g. Own a dinghy? This is your membership.">
                 </div>
                 <div class="rhcm-field">
                     <label>Price <small>(display text)</small></label>
-                    <input type="text" name="price" value="<?= esc_attr( $m['price'] ?? '' ) ?>" placeholder="e.g. From £62  or  £5">
+                    <input type="text" name="price" value="<?= esc_attr( $m['price'] ?? '' ) ?>" placeholder="e.g. From £62/month (under-30)">
                 </div>
                 <div class="rhcm-field">
                     <label>Frequency <small>(shown below price)</small></label>
@@ -719,6 +731,21 @@ class RHCM_Admin {
                 <div class="rhcm-field rhcm-field-full">
                     <label>Destination URL <small>(the "Find Out More" button links here)</small></label>
                     <input type="url" name="info_url" value="<?= esc_attr( $m['info_url'] ?? '' ) ?>" placeholder="https://yoursite.com/standard-membership">
+                </div>
+                <div class="rhcm-field rhcm-field-full">
+                    <label>Card Photo <small>(shown at the top of the membership card)</small></label>
+                    <div class="rhcm-img-picker">
+                        <input type="hidden" name="image_url" id="rhcm-mem-img-url" value="<?= esc_attr( $m['image_url'] ?? '' ) ?>">
+                        <img id="rhcm-mem-img-preview" src="<?= esc_url( $m['image_url'] ?? '' ) ?>"
+                             style="<?= $has_img ? '' : 'display:none;' ?>max-width:320px;height:140px;object-fit:cover;border-radius:6px;margin-bottom:8px;display:block">
+                        <button type="button" class="button rhcm-media-btn"
+                                data-input="rhcm-mem-img-url"
+                                data-img="rhcm-mem-img-preview"><?= $has_img ? 'Change Image' : 'Select Image' ?></button>
+                        <button type="button" class="button rhcm-media-remove"
+                                data-input="rhcm-mem-img-url"
+                                data-img="rhcm-mem-img-preview"
+                                style="<?= $has_img ? '' : 'display:none' ?>">Remove</button>
+                    </div>
                 </div>
                 <div class="rhcm-field">
                     <label><input type="checkbox" name="is_popular" value="1" <?= checked( $m['is_popular'] ?? 0, 1, false ) ?>> Mark as <strong>Most Popular</strong></label>
@@ -747,6 +774,139 @@ class RHCM_Admin {
         if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Unauthorised' );
         RHCM_DB::delete_membership( $id );
         wp_redirect( admin_url( 'admin.php?page=rhcm-memberships&notice=deleted' ) );
+        exit;
+    }
+
+    // ── Membership Categories ─────────────────────────────────────────────────
+
+    public function page_mem_categories() {
+        $notice = $_GET['notice'] ?? '';
+        $cats   = RHCM_DB::get_mem_categories();
+        ?>
+        <div class="wrap rhcm-wrap">
+        <h1>Membership Categories</h1>
+        <p style="color:#6b7280;margin-bottom:20px">Create categories to group membership cards in the <code>[rhcm_memberships]</code> shortcode. Each category can have an optional banner image.</p>
+        <?php if ( $notice === 'saved' ): ?><div class="notice notice-success is-dismissible"><p>Membership categories saved.</p></div><?php endif; ?>
+
+        <form method="POST" action="<?= esc_url( admin_url('admin-post.php') ) ?>" class="rhcm-form" style="max-width:700px">
+            <?php wp_nonce_field( 'rhcm_save_mem_categories', 'rhcm_nonce' ); ?>
+            <input type="hidden" name="action" value="rhcm_save_mem_categories">
+
+            <div style="background:#fff;border-radius:8px;padding:24px;box-shadow:0 1px 4px rgba(0,0,0,.08)">
+
+            <?php if ( ! empty( $cats ) ): ?>
+            <h3 style="margin:0 0 16px;color:#0a2342">Existing Categories</h3>
+            <div style="display:flex;flex-direction:column;gap:16px">
+            <?php foreach ( $cats as $key => $cat ):
+                $input_id = 'rhcm-mcat-img-' . esc_attr( $key );
+                $prev_id  = 'rhcm-mcat-prev-' . esc_attr( $key );
+                $img_url  = $cat['image_url'] ?? '';
+                $has_img  = ! empty( $img_url );
+            ?>
+            <div style="border:1px solid #e5e7eb;border-radius:8px;padding:16px">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+                    <div class="rhcm-field">
+                        <label>Key <small style="color:#6b7280">(cannot change)</small></label>
+                        <input type="text" value="<?= esc_attr( $key ) ?>" disabled style="background:#f8f9fb;color:#6b7280">
+                    </div>
+                    <div class="rhcm-field">
+                        <label>Name *</label>
+                        <input type="text" name="cats[<?= esc_attr($key) ?>][label]" value="<?= esc_attr( $cat['label'] ?? '' ) ?>" required>
+                    </div>
+                </div>
+                <div class="rhcm-field">
+                    <label>Banner Image</label>
+                    <div class="rhcm-img-picker">
+                        <input type="hidden" name="cats[<?= esc_attr($key) ?>][image_url]" id="<?= $input_id ?>" value="<?= esc_attr( $img_url ) ?>">
+                        <img id="<?= $prev_id ?>" src="<?= esc_url( $img_url ) ?>"
+                             style="<?= $has_img ? '' : 'display:none;' ?>max-width:280px;height:100px;object-fit:cover;border-radius:6px;margin-bottom:8px;display:block">
+                        <button type="button" class="button rhcm-media-btn"
+                                data-input="<?= $input_id ?>"
+                                data-img="<?= $prev_id ?>"><?= $has_img ? 'Change Image' : 'Select Image' ?></button>
+                        <button type="button" class="button rhcm-media-remove"
+                                data-input="<?= $input_id ?>"
+                                data-img="<?= $prev_id ?>"
+                                style="<?= $has_img ? '' : 'display:none' ?>">Remove</button>
+                    </div>
+                </div>
+                <div style="margin-top:8px">
+                    <label style="color:#c0392b;font-size:.82rem">
+                        <input type="checkbox" name="cats[<?= esc_attr($key) ?>][delete]" value="1"> Delete this category
+                    </label>
+                </div>
+            </div>
+            <?php endforeach; ?>
+            </div>
+            <hr style="margin:24px 0;border:none;border-top:1px solid #e5e7eb">
+            <?php endif; ?>
+
+            <h3 style="margin:0 0 16px;color:#0a2342"><?= empty($cats) ? 'Add First Category' : 'Add New Category' ?></h3>
+            <div style="border:1px dashed #c8a84b;border-radius:8px;padding:16px">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+                    <div class="rhcm-field">
+                        <label>Key / Slug <small style="color:#6b7280">(e.g. standard, select)</small></label>
+                        <input type="text" name="new_cat[key]" placeholder="e.g. standard">
+                    </div>
+                    <div class="rhcm-field">
+                        <label>Name</label>
+                        <input type="text" name="new_cat[label]" placeholder="e.g. Standard Memberships">
+                    </div>
+                </div>
+                <div class="rhcm-field">
+                    <label>Banner Image</label>
+                    <div class="rhcm-img-picker">
+                        <input type="hidden" name="new_cat[image_url]" id="rhcm-new-mcat-img-url" value="">
+                        <img id="rhcm-new-mcat-img-prev" src="" style="display:none;max-width:280px;height:100px;object-fit:cover;border-radius:6px;margin-bottom:8px">
+                        <button type="button" class="button rhcm-media-btn"
+                                data-input="rhcm-new-mcat-img-url"
+                                data-img="rhcm-new-mcat-img-prev">Select Image</button>
+                        <button type="button" class="button rhcm-media-remove"
+                                data-input="rhcm-new-mcat-img-url"
+                                data-img="rhcm-new-mcat-img-prev"
+                                style="display:none">Remove</button>
+                    </div>
+                </div>
+                <p style="color:#6b7280;font-size:.8rem;margin:8px 0 0">Leave Key and Name blank to skip adding a new category.</p>
+            </div>
+
+            </div><!-- end white box -->
+            <p><button type="submit" class="button button-primary">Save Membership Categories</button></p>
+        </form>
+        </div>
+        <?php
+    }
+
+    public function handle_save_mem_categories() {
+        check_admin_referer( 'rhcm_save_mem_categories', 'rhcm_nonce' );
+        if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Unauthorised' );
+
+        $existing  = RHCM_DB::get_mem_categories();
+        $submitted = (array) ( $_POST['cats'] ?? [] );
+        $clean     = [];
+
+        foreach ( $existing as $key => $cat ) {
+            if ( ! isset( $submitted[ $key ] ) ) { $clean[ $key ] = $cat; continue; }
+            $row = $submitted[ $key ];
+            if ( ! empty( $row['delete'] ) ) continue;
+            $clean[ $key ] = [
+                'label'     => sanitize_text_field( $row['label']     ?? '' ),
+                'image_url' => esc_url_raw( $row['image_url'] ?? '' ),
+            ];
+        }
+
+        $new = $_POST['new_cat'] ?? [];
+        if ( ! empty( $new['key'] ) && ! empty( $new['label'] ) ) {
+            $slug = sanitize_key( $new['key'] );
+            if ( $slug && ! isset( $clean[ $slug ] ) ) {
+                $clean[ $slug ] = [
+                    'label'     => sanitize_text_field( $new['label'] ),
+                    'image_url' => esc_url_raw( $new['image_url'] ?? '' ),
+                ];
+            }
+        }
+
+        RHCM_DB::save_mem_categories( $clean );
+        wp_redirect( admin_url( 'admin.php?page=rhcm-mem-categories&notice=saved' ) );
         exit;
     }
 

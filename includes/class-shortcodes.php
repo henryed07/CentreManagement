@@ -594,52 +594,102 @@ class RHCM_Shortcodes {
         return '<span class="rhcm-cat-tag" style="background:' . esc_attr( $color ) . '">' . esc_html( $label ) . '</span>';
     }
 
-    // ── [rhcm_memberships] ─────────────────────────────────────────────────────
+    // ── [rhcm_memberships category=""] ────────────────────────────────────────
 
     public function render_memberships( array $atts ) {
+        $atts       = shortcode_atts( [ 'category' => '' ], $atts );
+        $filter_cat = sanitize_text_field( $atts['category'] );
+
         $memberships = RHCM_DB::get_memberships( true );
         if ( empty( $memberships ) ) return '<p>No membership options available yet.</p>';
 
+        if ( $filter_cat ) {
+            $memberships = array_values( array_filter( $memberships, fn($m) => ( $m['mem_category'] ?? '' ) === $filter_cat ) );
+            if ( empty( $memberships ) ) return '<p>No membership options available in this category.</p>';
+        }
+
+        $mem_cats = RHCM_DB::get_mem_categories();
+
+        // Group by category (only when showing all and categories exist)
+        $grouped      = [];
+        $uncategorized = [];
+        foreach ( $memberships as $m ) {
+            $cat = $m['mem_category'] ?? '';
+            if ( ! $filter_cat && $cat && isset( $mem_cats[ $cat ] ) ) {
+                $grouped[ $cat ][] = $m;
+            } else {
+                $uncategorized[] = $m;
+            }
+        }
+
+        $use_categories = ! $filter_cat && ! empty( $grouped );
+
+        ob_start();
+
+        if ( $use_categories ) {
+            echo '<div class="rhcm-mem-categories-wrap">';
+            foreach ( $grouped as $cat_key => $cat_memberships ) {
+                $cat_data = $mem_cats[ $cat_key ];
+                echo '<div class="rhcm-mem-cat-section">';
+                if ( ! empty( $cat_data['image_url'] ) ) {
+                    echo '<div class="rhcm-mem-cat-banner" style="background-image:url(\'' . esc_url( $cat_data['image_url'] ) . '\')">'
+                       . '<div class="rhcm-mem-cat-banner-overlay"><h3>' . esc_html( $cat_data['label'] ?? $cat_key ) . '</h3></div>'
+                       . '</div>';
+                } else {
+                    echo '<div class="rhcm-mem-cat-heading"><h3>' . esc_html( $cat_data['label'] ?? $cat_key ) . '</h3></div>';
+                }
+                echo '<div class="rhcm-mem-grid">';
+                foreach ( $cat_memberships as $m ) echo $this->render_mem_card( $m );
+                echo '</div></div>';
+            }
+            if ( ! empty( $uncategorized ) ) {
+                echo '<div class="rhcm-mem-cat-section"><div class="rhcm-mem-grid">';
+                foreach ( $uncategorized as $m ) echo $this->render_mem_card( $m );
+                echo '</div></div>';
+            }
+            echo '</div>';
+        } else {
+            echo '<div class="rhcm-mem-grid">';
+            foreach ( $memberships as $m ) echo $this->render_mem_card( $m );
+            echo '</div>';
+        }
+
+        return ob_get_clean();
+    }
+
+    private function render_mem_card( array $m ): string {
+        $featured = (int) ( $m['is_popular'] ?? 0 );
+        $lines    = array_filter( array_map( 'trim', explode( "\n", $m['details'] ?? '' ) ) );
+        $img_url  = $m['image_url'] ?? '';
+
         ob_start();
         ?>
-        <div class="rhcm-mem-grid">
-        <?php foreach ( $memberships as $m ):
-            $featured = (int) $m['is_popular'];
-            $lines    = array_filter( array_map( 'trim', explode( "\n", $m['details'] ?? '' ) ) );
-        ?>
         <div class="rhcm-mem-card<?= $featured ? ' rhcm-mem-featured' : '' ?>">
-            <div class="rhcm-mem-header">
+            <div class="rhcm-mem-photo"<?= $img_url ? ' style="background-image:url(' . esc_url( $img_url ) . ')"' : '' ?>>
                 <?php if ( $featured ): ?>
-                <div class="rhcm-featured-badge">Most Popular</div>
+                <span class="rhcm-featured-badge">Most Popular</span>
                 <?php endif; ?>
-                <?php if ( $m['icon'] ): ?>
-                <div class="rhcm-mem-icon"><?= esc_html( $m['icon'] ) ?></div>
-                <?php endif; ?>
-                <div class="rhcm-mem-name"><?= esc_html( $m['name'] ) ?></div>
-                <?php if ( $m['tagline'] ): ?>
-                <div class="rhcm-mem-tagline"><?= esc_html( $m['tagline'] ) ?></div>
-                <?php endif; ?>
-                <div class="rhcm-mem-price"><?= esc_html( $m['price'] ) ?></div>
-                <div class="rhcm-mem-period"><?= esc_html( $m['frequency'] ) ?></div>
             </div>
+            <div class="rhcm-mem-title-strip"><?= esc_html( $m['name'] ) ?></div>
             <div class="rhcm-mem-body">
+                <?php if ( $m['tagline'] ): ?>
+                <p class="rhcm-mem-tagline"><?= esc_html( $m['tagline'] ) ?></p>
+                <?php endif; ?>
                 <?php if ( ! empty( $lines ) ): ?>
                 <ul class="rhcm-mem-features">
-                    <?php foreach ( $lines as $line ): ?>
-                    <li><?= esc_html( $line ) ?></li>
-                    <?php endforeach; ?>
+                    <?php foreach ( $lines as $line ): ?><li><?= esc_html( $line ) ?></li><?php endforeach; ?>
                 </ul>
                 <?php endif; ?>
-                <?php if ( $m['info_url'] ): ?>
-                <div class="rhcm-mem-cta">
-                    <a href="<?= esc_url( $m['info_url'] ) ?>" class="rhcm-btn rhcm-btn-primary rhcm-btn-full">
-                        Find Out More &rarr;
-                    </a>
+                <?php if ( $m['price'] || $m['frequency'] ): ?>
+                <div class="rhcm-mem-price-area">
+                    <?php if ( $m['price'] ): ?><span class="rhcm-mem-price"><?= esc_html( $m['price'] ) ?></span><?php endif; ?>
+                    <?php if ( $m['frequency'] ): ?><span class="rhcm-mem-freq"><?= esc_html( $m['frequency'] ) ?></span><?php endif; ?>
                 </div>
                 <?php endif; ?>
+                <?php if ( $m['info_url'] ): ?>
+                <a href="<?= esc_url( $m['info_url'] ) ?>" class="rhcm-mem-btn">Find Out More &rarr;</a>
+                <?php endif; ?>
             </div>
-        </div>
-        <?php endforeach; ?>
         </div>
         <?php
         return ob_get_clean();

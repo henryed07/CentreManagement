@@ -68,6 +68,8 @@ KEY email (email)
 id INT UNSIGNED NOT NULL AUTO_INCREMENT,
 name VARCHAR(200) NOT NULL,
 icon VARCHAR(30) NOT NULL DEFAULT '',
+image_url VARCHAR(500) NOT NULL DEFAULT '',
+mem_category VARCHAR(80) NOT NULL DEFAULT '',
 tagline VARCHAR(500) NOT NULL DEFAULT '',
 price VARCHAR(50) NOT NULL DEFAULT '',
 frequency VARCHAR(80) NOT NULL DEFAULT '',
@@ -370,16 +372,18 @@ UNIQUE KEY code (code)
         global $wpdb;
         $t = $wpdb->prefix . 'rhcm_memberships';
         $row = [
-            'name'       => sanitize_text_field( $data['name']      ?? '' ),
-            'icon'       => sanitize_text_field( $data['icon']      ?? '' ),
-            'tagline'    => sanitize_text_field( $data['tagline']   ?? '' ),
-            'price'      => sanitize_text_field( $data['price']     ?? '' ),
-            'frequency'  => sanitize_text_field( $data['frequency'] ?? '' ),
-            'details'    => sanitize_textarea_field( $data['details'] ?? '' ),
-            'is_popular' => isset( $data['is_popular'] ) ? 1 : 0,
-            'info_url'   => esc_url_raw( $data['info_url'] ?? '' ),
-            'sort_order' => (int) ( $data['sort_order'] ?? 0 ),
-            'is_active'  => isset( $data['is_active'] ) ? 1 : 0,
+            'name'         => sanitize_text_field( $data['name']         ?? '' ),
+            'icon'         => sanitize_text_field( $data['icon']         ?? '' ),
+            'image_url'    => esc_url_raw( $data['image_url']    ?? '' ),
+            'mem_category' => sanitize_text_field( $data['mem_category'] ?? '' ),
+            'tagline'      => sanitize_text_field( $data['tagline']      ?? '' ),
+            'price'        => sanitize_text_field( $data['price']        ?? '' ),
+            'frequency'    => sanitize_text_field( $data['frequency']    ?? '' ),
+            'details'      => sanitize_textarea_field( $data['details']  ?? '' ),
+            'is_popular'   => isset( $data['is_popular'] ) ? 1 : 0,
+            'info_url'     => esc_url_raw( $data['info_url'] ?? '' ),
+            'sort_order'   => (int) ( $data['sort_order'] ?? 0 ),
+            'is_active'    => isset( $data['is_active'] ) ? 1 : 0,
         ];
         if ( $id ) { $wpdb->update( $t, $row, [ 'id' => $id ] ); return $id; }
         $wpdb->insert( $t, $row );
@@ -484,6 +488,14 @@ UNIQUE KEY code (code)
 
     public static function save_category_images( array $data ) {
         update_option( 'rhcm_category_images', $data );
+    }
+
+    public static function get_mem_categories() {
+        return (array) get_option( 'rhcm_mem_categories', [] );
+    }
+
+    public static function save_mem_categories( array $data ) {
+        update_option( 'rhcm_mem_categories', $data );
     }
 
     public static function category_colors() {
