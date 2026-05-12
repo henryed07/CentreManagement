@@ -86,13 +86,16 @@
         var total = 0;
         var html  = '';
         cart.forEach(function (item) {
-            total += parseFloat(item.price) || 0;
+            var spaces    = parseInt(item.spaces || 1, 10);
+            var itemTotal = (parseFloat(item.price) || 0) * spaces;
+            total += itemTotal;
             html += '<div class="rhcm-cart-item">' +
                 '<div class="rhcm-cart-item-info">' +
                     '<span class="rhcm-cart-item-title">' + escHtml(item.title) + '</span>' +
                     '<span class="rhcm-cart-item-date">'  + escHtml(item.date)  + '</span>' +
+                    (spaces > 1 ? '<span class="rhcm-cart-item-spaces">' + spaces + ' spaces &times; £' + parseFloat(item.price).toFixed(2) + '</span>' : '') +
                 '</div>' +
-                '<span class="rhcm-cart-item-price">£' + parseFloat(item.price).toFixed(2) + '</span>' +
+                '<span class="rhcm-cart-item-price">£' + itemTotal.toFixed(2) + '</span>' +
                 '<button class="rhcm-cart-remove" data-remove="' + escHtml(item.id) + '" title="Remove">&times;</button>' +
                 '</div>';
         });
@@ -141,18 +144,22 @@
         var inputHtml = '';
 
         cart.forEach(function (item) {
-            total += parseFloat(item.price) || 0;
+            var spaces    = parseInt(item.spaces || 1, 10);
+            var itemTotal = (parseFloat(item.price) || 0) * spaces;
+            total += itemTotal;
             if (item.full === '1' || item.full === true) hasWait = true;
 
             itemHtml += '<div class="rhcm-modal-item">' +
                 '<div>' +
                     '<span class="rhcm-modal-item-name">' + escHtml(item.title) + '</span>' +
                     '<span class="rhcm-modal-item-date">'  + escHtml(item.date)  + '</span>' +
+                    (spaces > 1 ? '<span class="rhcm-modal-item-spaces">' + spaces + ' spaces &times; £' + parseFloat(item.price).toFixed(2) + '</span>' : '') +
                 '</div>' +
-                '<span class="rhcm-modal-item-price">£' + parseFloat(item.price).toFixed(2) + '</span>' +
+                '<span class="rhcm-modal-item-price">£' + itemTotal.toFixed(2) + '</span>' +
                 '</div>';
 
             inputHtml += '<input type="hidden" name="session_ids[]" value="' + escHtml(item.id) + '">';
+            inputHtml += '<input type="hidden" name="session_spaces[]" value="' + spaces + '">';
         });
 
         if (itemsEl)  itemsEl.innerHTML  = itemHtml;
@@ -192,15 +199,39 @@
                 removeFromCart(sid);
             } else {
                 addToCart({
-                    id:    sid,
-                    title: addBtn.dataset.title,
-                    date:  addBtn.dataset.date,
-                    price: addBtn.dataset.price,
-                    full:  addBtn.dataset.full,
+                    id:     sid,
+                    title:  addBtn.dataset.title,
+                    date:   addBtn.dataset.date,
+                    price:  addBtn.dataset.price,
+                    full:   addBtn.dataset.full,
+                    spaces: parseInt(addBtn.dataset.spaces || '1', 10),
                 });
                 // Brief visual confirmation
                 addBtn.textContent = '✓ Added!';
                 setTimeout(updateCartUI, 600);
+            }
+            return;
+        }
+
+        // Spaces stepper: minus
+        var minusBtn = e.target.closest('.rhcm-spaces-minus');
+        if (minusBtn) {
+            var inp = minusBtn.parentNode.querySelector('.rhcm-spaces-input');
+            if (inp) {
+                inp.value = Math.max(1, parseInt(inp.value, 10) - 1);
+                updateSpacesUI(inp);
+            }
+            return;
+        }
+
+        // Spaces stepper: plus
+        var plusBtn = e.target.closest('.rhcm-spaces-plus');
+        if (plusBtn) {
+            var inp = plusBtn.parentNode.querySelector('.rhcm-spaces-input');
+            if (inp) {
+                var max = parseInt(inp.getAttribute('max') || '99', 10);
+                inp.value = Math.min(max, parseInt(inp.value, 10) + 1);
+                updateSpacesUI(inp);
             }
             return;
         }
@@ -292,6 +323,30 @@
         }
     });
 
+    // ── Spaces stepper helpers ────────────────────────────────────────────────
+
+    function updateSpacesUI(input) {
+        var spaces = Math.max(1, parseInt(input.value, 10) || 1);
+        var max    = parseInt(input.getAttribute('max') || '99', 10);
+        spaces     = Math.min(spaces, max);
+        input.value = spaces;
+
+        var panel = input.closest('.rhcm-sd-order');
+        if (!panel) return;
+
+        var btn = panel.querySelector('.rhcm-add-to-cart');
+        if (btn) btn.dataset.spaces = spaces;
+
+        var price      = parseFloat(btn ? btn.dataset.price : 0) || 0;
+        var subtotalEl = panel.querySelector('.rhcm-sd-subtotal');
+        if (subtotalEl) subtotalEl.textContent = '£' + (price * spaces).toFixed(2);
+    }
+
+    document.addEventListener('input', function (e) {
+        if (!e.target.classList.contains('rhcm-spaces-input')) return;
+        updateSpacesUI(e.target);
+    });
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     function escHtml(str) {
@@ -321,7 +376,7 @@
 
     function updateModalTotal() {
         var cart     = getCart();
-        var subtotal = cart.reduce(function (s, i) { return s + (parseFloat(i.price) || 0); }, 0);
+        var subtotal = cart.reduce(function (s, i) { return s + (parseFloat(i.price) || 0) * (parseInt(i.spaces || 1, 10)); }, 0);
         var saving   = 0;
 
         if (appliedDiscount) {

@@ -22,6 +22,7 @@ duration VARCHAR(80) NOT NULL DEFAULT '',
 level VARCHAR(80) NOT NULL DEFAULT '',
 rya_cert VARCHAR(80) NOT NULL DEFAULT '',
 max_participants INT UNSIGNED NOT NULL DEFAULT 12,
+sort_order INT NOT NULL DEFAULT 0,
 is_active TINYINT(1) NOT NULL DEFAULT 1,
 created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 PRIMARY KEY  (id)
@@ -54,6 +55,7 @@ dob DATE,
 emg_name VARCHAR(200) NOT NULL DEFAULT '',
 emg_phone VARCHAR(30) NOT NULL DEFAULT '',
 notes TEXT,
+spaces TINYINT UNSIGNED NOT NULL DEFAULT 1,
 discount_code VARCHAR(50) NOT NULL DEFAULT '',
 discount_amount DECIMAL(8,2) NOT NULL DEFAULT 0,
 status VARCHAR(20) NOT NULL DEFAULT 'confirmed',
@@ -125,7 +127,7 @@ UNIQUE KEY code (code)
             $params[] = $args['category'];
         }
 
-        $sql = "SELECT * FROM $t $where ORDER BY title";
+        $sql = "SELECT * FROM $t $where ORDER BY sort_order ASC, title ASC";
         return $params
             ? $wpdb->get_results( $wpdb->prepare( $sql, $params ), ARRAY_A )
             : $wpdb->get_results( $sql, ARRAY_A );
@@ -153,6 +155,7 @@ UNIQUE KEY code (code)
             'level'            => sanitize_text_field( $data['level'] ?? '' ),
             'rya_cert'         => sanitize_text_field( $data['rya_cert'] ?? '' ),
             'max_participants' => max( 1, (int) ( $data['max_participants'] ?? 12 ) ),
+            'sort_order'       => (int) ( $data['sort_order'] ?? 0 ),
             'is_active'        => isset( $data['is_active'] ) ? 1 : 0,
         ];
         if ( $id ) {
@@ -196,7 +199,7 @@ UNIQUE KEY code (code)
             SELECT s.*,
                    c.title, c.icon, c.category, c.price, c.duration, c.level, c.rya_cert, c.description, c.image_url,
                    COALESCE(s.spaces, c.max_participants) AS total_spaces,
-                   (SELECT COUNT(*) FROM {$wpdb->prefix}rhcm_bookings b
+                   (SELECT COALESCE(SUM(b.spaces), 0) FROM {$wpdb->prefix}rhcm_bookings b
                     WHERE b.session_id = s.id AND b.status = 'confirmed') AS enrolled
             FROM $cs s
             JOIN $cc c ON s.course_id = c.id
@@ -217,7 +220,7 @@ UNIQUE KEY code (code)
             $wpdb->prepare(
                 "SELECT s.*, c.title, c.icon, c.category, c.price, c.duration, c.level, c.rya_cert, c.description, c.image_url,
                         COALESCE(s.spaces, c.max_participants) AS total_spaces,
-                        (SELECT COUNT(*) FROM {$wpdb->prefix}rhcm_bookings b WHERE b.session_id = s.id AND b.status = 'confirmed') AS enrolled
+                        (SELECT COALESCE(SUM(b.spaces), 0) FROM {$wpdb->prefix}rhcm_bookings b WHERE b.session_id = s.id AND b.status = 'confirmed') AS enrolled
                  FROM $cs s JOIN $cc c ON s.course_id = c.id
                  WHERE s.id = %d AND s.is_active = 1 AND c.is_active = 1",
                 $id
@@ -308,8 +311,9 @@ UNIQUE KEY code (code)
         $session = self::get_session( (int) $data['session_id'] );
         if ( ! $session ) return new WP_Error( 'not_found', 'Session not found.' );
 
+        $spaces      = max( 1, (int) ( $data['spaces'] ?? 1 ) );
         $spaces_left = (int) $session['total_spaces'] - (int) $session['enrolled'];
-        $status      = $spaces_left > 0 ? 'confirmed' : 'waiting';
+        $status      = $spaces_left >= $spaces ? 'confirmed' : 'waiting';
 
         // unique ref
         $chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
@@ -333,6 +337,7 @@ UNIQUE KEY code (code)
             'emg_name'        => sanitize_text_field( $data['emg_name']  ?? '' ),
             'emg_phone'       => sanitize_text_field( $data['emg_phone'] ?? '' ),
             'notes'           => sanitize_textarea_field( $data['notes'] ?? '' ),
+            'spaces'          => $spaces,
             'discount_code'   => sanitize_text_field( $data['discount_code']   ?? '' ),
             'discount_amount' => (float) ( $data['discount_amount'] ?? 0 ),
             'status'          => $status,

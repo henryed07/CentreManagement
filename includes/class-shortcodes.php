@@ -10,6 +10,7 @@ class RHCM_Shortcodes {
         add_shortcode( 'rhcm_courses',      [ $this, 'render_courses' ] );
         add_shortcode( 'rhcm_tag',          [ $this, 'render_tag' ] );
         add_shortcode( 'rhcm_memberships',  [ $this, 'render_memberships' ] );
+        add_shortcode( 'rhcm_session',      [ $this, 'render_session_detail' ] );
         add_action( 'wp_enqueue_scripts', [ $this, 'enqueue' ] );
         add_action( 'init',              [ $this, 'handle_booking_post' ] );
         add_action( 'wp_ajax_rhcm_validate_discount',        [ $this, 'ajax_validate_discount' ] );
@@ -19,7 +20,7 @@ class RHCM_Shortcodes {
     public function enqueue() {
         global $post;
         if ( ! $post ) return;
-        $shortcodes = [ 'rhcm_schedule', 'rhcm_course', 'rhcm_course_card', 'rhcm_courses', 'rhcm_tag', 'rhcm_memberships' ];
+        $shortcodes = [ 'rhcm_schedule', 'rhcm_course', 'rhcm_course_card', 'rhcm_courses', 'rhcm_tag', 'rhcm_memberships', 'rhcm_session' ];
         $needs_assets = false;
         foreach ( $shortcodes as $sc ) {
             if ( has_shortcode( $post->post_content, $sc ) ) { $needs_assets = true; break; }
@@ -53,12 +54,14 @@ class RHCM_Shortcodes {
 
         // Cart checkout: array of session_ids
         if ( ! empty( $_POST['session_ids'] ) && is_array( $_POST['session_ids'] ) ) {
-            $session_ids = array_map( 'intval', $_POST['session_ids'] );
+            $session_ids    = array_map( 'intval', $_POST['session_ids'] );
+            $session_spaces = isset( $_POST['session_spaces'] ) ? array_map( 'intval', (array) $_POST['session_spaces'] ) : [];
             $refs  = [];
             $mixed = false;
 
-            foreach ( $session_ids as $sid ) {
-                $data   = array_merge( $_POST, [ 'session_id' => $sid ] );
+            foreach ( $session_ids as $i => $sid ) {
+                $spaces = max( 1, (int) ( $session_spaces[ $i ] ?? 1 ) );
+                $data   = array_merge( $_POST, [ 'session_id' => $sid, 'spaces' => $spaces ] );
                 $result = RHCM_DB::create_booking( $data );
                 if ( ! is_wp_error( $result ) ) {
                     $refs[] = $result['ref'];
@@ -83,7 +86,8 @@ class RHCM_Shortcodes {
             exit;
         }
 
-        $result = RHCM_DB::create_booking( $_POST );
+        $single_data = array_merge( (array) $_POST, [ 'spaces' => max( 1, (int) ( $_POST['spaces'] ?? 1 ) ) ] );
+        $result = RHCM_DB::create_booking( $single_data );
 
         if ( is_wp_error( $result ) ) {
             wp_safe_redirect( add_query_arg( [ 'rhcm_error' => 'server' ], wp_get_referer() ) );
@@ -469,7 +473,7 @@ class RHCM_Shortcodes {
             <?php endif; ?>
 
             <a href="<?= esc_url( $atts['schedule_url'] ) ?>" class="rhcm-btn rhcm-btn-primary rhcm-btn-full">
-                View Schedule &rarr;
+                See Dates &amp; Book
             </a>
             <?php if ( $course_img ): ?></div><?php endif; ?>
         </div>
@@ -563,7 +567,7 @@ class RHCM_Shortcodes {
                 <?php endif; ?>
 
                 <a href="<?= esc_url( $atts['schedule_url'] ) ?>" class="rhcm-btn rhcm-btn-primary rhcm-btn-full">
-                    View Schedule &rarr;
+                    See Dates &amp; Book
                 </a>
                 <?php if ( $course_img ): ?></div><?php endif; ?>
             </div>
@@ -702,6 +706,139 @@ class RHCM_Shortcodes {
             </div>
         </div>
         <?php
+        return ob_get_clean();
+    }
+
+    // ── [rhcm_session id="X"] ─────────────────────────────────────────────────
+
+    public function render_session_detail( array $atts ) {
+        $atts = shortcode_atts( [ 'id' => 0 ], $atts );
+        $s    = RHCM_DB::get_session( (int) $atts['id'] );
+        if ( ! $s ) return '<p class="rhcm-notice rhcm-notice-error">Session not found.</p>';
+
+        $left     = (int) $s['total_spaces'] - (int) $s['enrolled'];
+        $full     = $left <= 0;
+        $date_str = $s['start_date'] === $s['end_date']
+            ? date( 'l j F Y', strtotime( $s['start_date'] ) )
+            : date( 'j F', strtotime( $s['start_date'] ) ) . ' – ' . date( 'j F Y', strtotime( $s['end_date'] ) );
+        $page_url = get_permalink();
+        $price    = (float) $s['price'];
+        $max_sel  = $full ? 1 : min( $left, 20 );
+        $colors   = RHCM_DB::category_colors();
+        $border   = $colors[ $s['category'] ] ?? '#0a2342';
+        $icon     = $s['icon'] ? esc_html( $s['icon'] ) . ' ' : '';
+
+        ob_start();
+
+        if ( ! empty( $_GET['rhcm_confirmed'] ) ) {
+            $status = $_GET['status'] ?? 'confirmed';
+            $refs   = esc_html( $_GET['refs'] ?? '' );
+            $cls    = $status === 'confirmed' ? 'confirmed' : 'waiting';
+            echo '<div class="rhcm-notice rhcm-notice-' . esc_attr( $cls ) . '">';
+            if ( $status === 'confirmed' ) {
+                echo '<strong>Booking confirmed!</strong> Reference: <strong>' . $refs . '</strong>. Confirmation email on its way.';
+            } else {
+                echo '<strong>Added to waiting list.</strong> Reference: <strong>' . $refs . '</strong>. We\'ll be in touch if a space opens up.';
+            }
+            echo '</div>';
+        }
+        if ( ! empty( $_GET['rhcm_error'] ) ) {
+            echo '<div class="rhcm-notice rhcm-notice-error">Please fill in all required fields and try again.</div>';
+        }
+        ?>
+        <div class="rhcm-session-detail">
+
+            <div class="rhcm-sd-left">
+                <?php if ( ! empty( $s['image_url'] ) ): ?>
+                <img class="rhcm-sd-img" src="<?= esc_url( $s['image_url'] ) ?>" alt="<?= esc_attr( $s['title'] ) ?>">
+                <?php endif; ?>
+
+                <h2 class="rhcm-sd-title"><?= $icon ?><?= esc_html( $s['title'] ) ?></h2>
+
+                <table class="rhcm-sd-table">
+                    <tr><th>Date</th><td><?= esc_html( $date_str ) ?></td></tr>
+                    <?php if ( $s['duration'] ): ?>
+                    <tr><th>Duration</th><td><?= esc_html( $s['duration'] ) ?></td></tr>
+                    <?php endif; ?>
+                    <?php if ( $s['level'] ): ?>
+                    <tr><th>Level</th><td><?= esc_html( $s['level'] ) ?></td></tr>
+                    <?php endif; ?>
+                    <?php if ( $s['rya_cert'] ): ?>
+                    <tr><th>Requires</th><td><span class="rhcm-req-badge"><strong>REQUIRES:</strong> <?= esc_html( $s['rya_cert'] ) ?></span></td></tr>
+                    <?php endif; ?>
+                    <tr>
+                        <th>Availability</th>
+                        <td>
+                            <?php if ( $full ): ?>
+                            <span style="color:var(--rhcm-red)">&#128308; Fully booked</span>
+                            <?php elseif ( $left <= 3 ): ?>
+                            <span style="color:var(--rhcm-amber)">&#128992; Only <?= $left ?> place<?= $left !== 1 ? 's' : '' ?> left</span>
+                            <?php else: ?>
+                            <span style="color:var(--rhcm-green)">&#128994; <?= $left ?> of <?= (int) $s['total_spaces'] ?> places available</span>
+                            <?php endif; ?>
+                        </td>
+                    </tr>
+                    <?php if ( $s['notes'] ): ?>
+                    <tr><th>Notes</th><td><?= esc_html( $s['notes'] ) ?></td></tr>
+                    <?php endif; ?>
+                </table>
+
+                <?php if ( $s['description'] ): ?>
+                <div class="rhcm-sd-desc">
+                    <h4>About this course</h4>
+                    <p><?= esc_html( $s['description'] ) ?></p>
+                </div>
+                <?php endif; ?>
+            </div>
+
+            <div class="rhcm-sd-right">
+                <div class="rhcm-sd-order" style="border-top-color:<?= esc_attr( $border ) ?>">
+                    <h3>Your Order</h3>
+                    <div class="rhcm-sd-order-name"><?= $icon ?><?= esc_html( $s['title'] ) ?></div>
+                    <div class="rhcm-sd-order-date">&#128197; <?= esc_html( $date_str ) ?></div>
+
+                    <div class="rhcm-sd-price-row">
+                        <span>Price per person</span>
+                        <strong>&pound;<?= number_format( $price, 0 ) ?></strong>
+                    </div>
+
+                    <div class="rhcm-spaces-row">
+                        <label for="rhcm-spaces-<?= (int) $s['id'] ?>">Spaces</label>
+                        <div class="rhcm-spaces-stepper">
+                            <button type="button" class="rhcm-spaces-minus" aria-label="Decrease">&#8722;</button>
+                            <input type="number" id="rhcm-spaces-<?= (int) $s['id'] ?>"
+                                   class="rhcm-spaces-input"
+                                   value="1" min="1" max="<?= $max_sel ?>"
+                                   data-price="<?= esc_attr( number_format( $price, 2 ) ) ?>">
+                            <button type="button" class="rhcm-spaces-plus" aria-label="Increase">&#43;</button>
+                        </div>
+                    </div>
+
+                    <div class="rhcm-sd-subtotal-row">
+                        <span>Subtotal</span>
+                        <strong class="rhcm-sd-subtotal">&pound;<?= number_format( $price, 2 ) ?></strong>
+                    </div>
+
+                    <button class="rhcm-btn rhcm-btn-primary rhcm-btn-full rhcm-add-to-cart"
+                            style="margin-top:16px"
+                            data-session="<?= (int) $s['id'] ?>"
+                            data-title="<?= esc_attr( $icon . $s['title'] ) ?>"
+                            data-date="<?= esc_attr( $date_str ) ?>"
+                            data-price="<?= esc_attr( number_format( $price, 2 ) ) ?>"
+                            data-spaces="1"
+                            data-full="<?= $full ? '1' : '0' ?>">
+                        <?= $full ? 'Join Waiting List' : 'Add to Cart' ?>
+                    </button>
+                    <p class="rhcm-sd-cart-note">Payment arranged after checkout.</p>
+                </div>
+            </div>
+
+        </div>
+        <?php
+
+        echo $this->cart_html( $page_url );
+        echo $this->checkout_modal_html( $page_url );
+
         return ob_get_clean();
     }
 
