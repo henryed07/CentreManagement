@@ -16,6 +16,7 @@ title VARCHAR(200) NOT NULL,
 description TEXT,
 category VARCHAR(80) NOT NULL DEFAULT '',
 icon VARCHAR(30) NOT NULL DEFAULT '',
+image_url VARCHAR(500) NOT NULL DEFAULT '',
 price DECIMAL(8,2) NOT NULL DEFAULT 0,
 duration VARCHAR(80) NOT NULL DEFAULT '',
 level VARCHAR(80) NOT NULL DEFAULT '',
@@ -144,6 +145,7 @@ UNIQUE KEY code (code)
             'description'      => sanitize_textarea_field( $data['description'] ?? '' ),
             'category'         => sanitize_text_field( $data['category'] ?? '' ),
             'icon'             => sanitize_text_field( $data['icon'] ?? '' ),
+            'image_url'        => esc_url_raw( $data['image_url'] ?? '' ),
             'price'            => (float) ( $data['price'] ?? 0 ),
             'duration'         => sanitize_text_field( $data['duration'] ?? '' ),
             'level'            => sanitize_text_field( $data['level'] ?? '' ),
@@ -475,6 +477,14 @@ UNIQUE KEY code (code)
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
+
+    public static function get_category_images() {
+        return (array) get_option( 'rhcm_category_images', [] );
+    }
+
+    public static function save_category_images( array $data ) {
+        update_option( 'rhcm_category_images', $data );
+    }
 
     public static function category_colors() {
         return [

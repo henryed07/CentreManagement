@@ -354,7 +354,11 @@ class RHCM_Shortcodes {
             echo '<div class="rhcm-notice rhcm-notice-error">Please fill in all required fields and try again.</div>';
         }
 
-        if ( empty( $sessions ) ): ?>
+        <?php if ( ! empty( $course['image_url'] ) ): ?>
+        <img class="rhcm-course-img-header" src="<?= esc_url( $course['image_url'] ) ?>" alt="<?= esc_attr( $course['title'] ) ?>">
+        <?php endif; ?>
+
+        <?php if ( empty( $sessions ) ): ?>
         <div class="rhcm-empty-month">
             <div class="rhcm-empty-icon">&#128197;</div>
             <h3>No upcoming sessions</h3>
@@ -428,11 +432,17 @@ class RHCM_Shortcodes {
         $course = RHCM_DB::get_course( (int) $atts['id'] );
         if ( ! $course || ! $course['is_active'] ) return '';
 
-        $color = RHCM_DB::category_colors()[$course['category']] ?? '#0a2342';
+        $color      = RHCM_DB::category_colors()[$course['category']] ?? '#0a2342';
+        $price      = (float) $course['price'];
+        $icon       = $course['icon'] ? esc_html( $course['icon'] ) . ' ' : '';
+        $course_img = $course['image_url'] ?? '';
 
         ob_start();
         ?>
-        <div class="rhcm-session-card" style="border-top-color:<?= esc_attr( $color ) ?>">
+        <div class="rhcm-session-card<?= $course_img ? ' rhcm-card-has-img' : '' ?>" style="border-top-color:<?= esc_attr( $color ) ?>">
+            <?php if ( $course_img ): ?>
+            <img class="rhcm-card-img" src="<?= esc_url( $course_img ) ?>" alt="<?= esc_attr( $course['title'] ) ?>">
+            <?php endif; ?>
             <div class="rhcm-sc-header">
                 <h3><?= $icon ?><?= esc_html( $course['title'] ) ?></h3>
                 <?php if ( $price > 0 ): ?>
@@ -473,8 +483,9 @@ class RHCM_Shortcodes {
         $courses = RHCM_DB::get_courses( $query );
         if ( empty( $courses ) ) return '<p>No courses available yet.</p>';
 
-        $colors = RHCM_DB::category_colors();
-        $labels = RHCM_DB::category_labels();
+        $colors    = RHCM_DB::category_colors();
+        $labels    = RHCM_DB::category_labels();
+        $cat_imgs  = RHCM_DB::get_category_images();
 
         // Group by category in label order; single-category skips headings
         $single_cat = ! empty( $atts['category'] );
@@ -492,25 +503,38 @@ class RHCM_Shortcodes {
         ?>
         <div class="rhcm-courses-wrap">
         <?php foreach ( $grouped as $cat_key => $cat_courses ):
-            $label = $labels[ $cat_key ] ?? ucfirst( str_replace( '_', ' ', $cat_key ) );
-            $color = $colors[ $cat_key ] ?? '#0a2342';
+            $label   = $labels[ $cat_key ] ?? ucfirst( str_replace( '_', ' ', $cat_key ) );
+            $color   = $colors[ $cat_key ] ?? '#0a2342';
+            $cat_img = $cat_imgs[ $cat_key ] ?? '';
         ?>
         <div class="rhcm-cat-section">
 
             <?php if ( ! $single_cat ): ?>
+            <?php if ( $cat_img ): ?>
+            <div class="rhcm-cat-banner" style="background-image:url('<?= esc_url( $cat_img ) ?>')">
+                <div class="rhcm-cat-banner-overlay" style="border-left:4px solid <?= esc_attr( $color ) ?>">
+                    <h3><?= esc_html( $label ) ?></h3>
+                </div>
+            </div>
+            <?php else: ?>
             <div class="rhcm-cat-heading">
                 <span class="rhcm-cat-dot" style="background:<?= esc_attr( $color ) ?>"></span>
                 <h3><?= esc_html( $label ) ?></h3>
             </div>
             <?php endif; ?>
+            <?php endif; ?>
 
             <div class="rhcm-session-grid">
             <?php foreach ( $cat_courses as $course ):
-                $price = (float) $course['price'];
-                $icon  = $course['icon'] ? esc_html( $course['icon'] ) . ' ' : '';
-                $desc  = esc_html( $course['description'] ?? '' );
+                $price     = (float) $course['price'];
+                $icon      = $course['icon'] ? esc_html( $course['icon'] ) . ' ' : '';
+                $desc      = esc_html( $course['description'] ?? '' );
+                $course_img = $course['image_url'] ?? '';
             ?>
-            <div class="rhcm-session-card" style="border-top-color:<?= esc_attr( $color ) ?>">
+            <div class="rhcm-session-card<?= $course_img ? ' rhcm-card-has-img' : '' ?>" style="border-top-color:<?= esc_attr( $color ) ?>">
+                <?php if ( $course_img ): ?>
+                <img class="rhcm-card-img" src="<?= esc_url( $course_img ) ?>" alt="<?= esc_attr( $course['title'] ) ?>">
+                <?php endif; ?>
                 <div class="rhcm-sc-header">
                     <h3><?= $icon ?><?= esc_html( $course['title'] ) ?></h3>
                     <?php if ( $price > 0 ): ?>

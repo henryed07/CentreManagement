@@ -14,8 +14,9 @@ class RHCM_Admin {
         add_action( 'admin_post_rhcm_admin_add_booking',    [ $this, 'handle_admin_add_booking' ] );
         add_action( 'admin_post_rhcm_save_membership',     [ $this, 'handle_save_membership' ] );
         add_action( 'admin_post_rhcm_delete_membership',   [ $this, 'handle_delete_membership' ] );
-        add_action( 'admin_post_rhcm_save_discount',       [ $this, 'handle_save_discount' ] );
-        add_action( 'admin_post_rhcm_delete_discount',     [ $this, 'handle_delete_discount' ] );
+        add_action( 'admin_post_rhcm_save_discount',         [ $this, 'handle_save_discount' ] );
+        add_action( 'admin_post_rhcm_delete_discount',       [ $this, 'handle_delete_discount' ] );
+        add_action( 'admin_post_rhcm_save_category_images',  [ $this, 'handle_save_category_images' ] );
     }
 
     public function register_menus() {
@@ -25,12 +26,15 @@ class RHCM_Admin {
         add_submenu_page( 'rhcm', 'Bookings', 'Bookings', 'manage_options', 'rhcm-bookings', [ $this, 'page_bookings' ] );
         add_submenu_page( 'rhcm', 'Memberships', 'Memberships', 'manage_options', 'rhcm-memberships', [ $this, 'page_memberships' ] );
         add_submenu_page( 'rhcm', 'Discount Codes', 'Discount Codes', 'manage_options', 'rhcm-discounts', [ $this, 'page_discounts' ] );
+        add_submenu_page( 'rhcm', 'Category Images', 'Category Images', 'manage_options', 'rhcm-category-images', [ $this, 'page_category_images' ] );
         add_submenu_page( 'rhcm', 'Shortcodes &amp; Help', 'Shortcodes &amp; Help', 'manage_options', 'rhcm-settings', [ $this, 'page_settings' ] );
     }
 
     public function enqueue( $hook ) {
         if ( strpos( $hook, 'rhcm' ) === false ) return;
         wp_enqueue_style( 'rhcm-admin', RHCM_URL . 'admin/css/admin.css', [], RHCM_VERSION );
+        wp_enqueue_media();
+        wp_enqueue_script( 'rhcm-admin', RHCM_URL . 'admin/js/admin.js', [ 'jquery' ], RHCM_VERSION, true );
     }
 
     // ── Dashboard ─────────────────────────────────────────────────────────────
@@ -182,6 +186,22 @@ class RHCM_Admin {
                 <div class="rhcm-field rhcm-field-full">
                     <label>Description</label>
                     <textarea name="description" rows="5"><?= esc_textarea( $c['description'] ?? '' ) ?></textarea>
+                </div>
+                <div class="rhcm-field rhcm-field-full">
+                    <label>Course Image</label>
+                    <div class="rhcm-img-picker">
+                        <input type="hidden" name="image_url" id="rhcm-course-img-url" value="<?= esc_attr( $c['image_url'] ?? '' ) ?>">
+                        <?php $has_img = ! empty( $c['image_url'] ); ?>
+                        <img id="rhcm-course-img-preview" src="<?= esc_url( $c['image_url'] ?? '' ) ?>"
+                             style="<?= $has_img ? '' : 'display:none;' ?>max-width:320px;border-radius:6px;margin-bottom:8px;display:block">
+                        <button type="button" class="button rhcm-media-btn"
+                                data-input="rhcm-course-img-url"
+                                data-img="rhcm-course-img-preview"><?= $has_img ? 'Change Image' : 'Select Image' ?></button>
+                        <button type="button" class="button rhcm-media-remove"
+                                data-input="rhcm-course-img-url"
+                                data-img="rhcm-course-img-preview"
+                                style="<?= $has_img ? '' : 'display:none' ?>">Remove</button>
+                    </div>
                 </div>
                 <div class="rhcm-field">
                     <label>
@@ -727,6 +747,69 @@ class RHCM_Admin {
         if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Unauthorised' );
         RHCM_DB::delete_membership( $id );
         wp_redirect( admin_url( 'admin.php?page=rhcm-memberships&notice=deleted' ) );
+        exit;
+    }
+
+    // ── Category Images ───────────────────────────────────────────────────────
+
+    public function page_category_images() {
+        $notice  = $_GET['notice'] ?? '';
+        $labels  = RHCM_DB::category_labels();
+        $colors  = RHCM_DB::category_colors();
+        $images  = RHCM_DB::get_category_images();
+        ?>
+        <div class="wrap rhcm-wrap">
+        <h1>Category Images</h1>
+        <p style="color:#6b7280;margin-bottom:20px">Set a banner image for each course category. These appear above the course cards in the <code>[rhcm_courses]</code> shortcode.</p>
+        <?php if ( $notice === 'saved' ): ?><div class="notice notice-success is-dismissible"><p>Category images saved.</p></div><?php endif; ?>
+
+        <form method="POST" action="<?= esc_url( admin_url( 'admin-post.php' ) ) ?>" class="rhcm-form" style="max-width:700px">
+            <?php wp_nonce_field( 'rhcm_save_category_images', 'rhcm_nonce' ); ?>
+            <input type="hidden" name="action" value="rhcm_save_category_images">
+
+            <div style="display:flex;flex-direction:column;gap:24px;background:#fff;border-radius:8px;padding:24px;box-shadow:0 1px 4px rgba(0,0,0,.08)">
+            <?php foreach ( $labels as $key => $label ):
+                $img_url  = $images[ $key ] ?? '';
+                $input_id = 'rhcm-cat-img-' . esc_attr( $key );
+                $prev_id  = 'rhcm-cat-prev-' . esc_attr( $key );
+                $has_img  = ! empty( $img_url );
+                $color    = $colors[ $key ] ?? '#0a2342';
+            ?>
+            <div style="display:flex;align-items:flex-start;gap:20px;padding-bottom:20px;border-bottom:1px solid #e5e7eb">
+                <span style="width:12px;height:12px;border-radius:50%;background:<?= esc_attr($color) ?>;flex-shrink:0;margin-top:4px"></span>
+                <div style="flex:1">
+                    <strong style="display:block;margin-bottom:10px;color:#0a2342"><?= esc_html( $label ) ?></strong>
+                    <input type="hidden" name="images[<?= esc_attr( $key ) ?>]" id="<?= $input_id ?>" value="<?= esc_attr( $img_url ) ?>">
+                    <img id="<?= $prev_id ?>" src="<?= esc_url( $img_url ) ?>"
+                         style="<?= $has_img ? '' : 'display:none;' ?>max-width:280px;height:120px;object-fit:cover;border-radius:6px;display:block;margin-bottom:8px">
+                    <button type="button" class="button rhcm-media-btn"
+                            data-input="<?= $input_id ?>"
+                            data-img="<?= $prev_id ?>"><?= $has_img ? 'Change Image' : 'Select Image' ?></button>
+                    <button type="button" class="button rhcm-media-remove"
+                            data-input="<?= $input_id ?>"
+                            data-img="<?= $prev_id ?>"
+                            style="<?= $has_img ? '' : 'display:none' ?>">Remove</button>
+                </div>
+            </div>
+            <?php endforeach; ?>
+            </div>
+
+            <p><button type="submit" class="button button-primary">Save Category Images</button></p>
+        </form>
+        </div>
+        <?php
+    }
+
+    public function handle_save_category_images() {
+        check_admin_referer( 'rhcm_save_category_images', 'rhcm_nonce' );
+        if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Unauthorised' );
+        $raw    = (array) ( $_POST['images'] ?? [] );
+        $clean  = [];
+        foreach ( $raw as $key => $url ) {
+            $clean[ sanitize_key( $key ) ] = esc_url_raw( $url );
+        }
+        RHCM_DB::save_category_images( $clean );
+        wp_redirect( admin_url( 'admin.php?page=rhcm-category-images&notice=saved' ) );
         exit;
     }
 

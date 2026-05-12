@@ -728,6 +728,54 @@
     gap: 24px;
 }
 
+/* ── Card image (course photo inside session/course card) ─────── */
+.rhcm-session-card.rhcm-card-has-img {
+    padding-top: 0;
+    overflow: hidden;
+}
+.rhcm-card-img {
+    display: block;
+    width: calc(100% + 44px);
+    margin: 0 -22px 18px -22px;
+    height: 180px;
+    object-fit: cover;
+}
+
+/* ── Category banner (image header for [rhcm_courses] sections) ── */
+.rhcm-cat-banner {
+    width: 100%;
+    height: 200px;
+    background-size: cover;
+    background-position: center;
+    border-radius: var(--rhcm-radius);
+    overflow: hidden;
+    position: relative;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: flex-end;
+}
+.rhcm-cat-banner-overlay {
+    width: 100%;
+    padding: 16px 20px;
+    background: linear-gradient(transparent, rgba(0,0,0,.65));
+}
+.rhcm-cat-banner-overlay h3 {
+    margin: 0;
+    color: #fff;
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+/* ── Course header image for [rhcm_course] ───────────────────── */
+.rhcm-course-img-header {
+    width: 100%;
+    height: 220px;
+    object-fit: cover;
+    border-radius: var(--rhcm-radius);
+    margin-bottom: 24px;
+    display: block;
+}
+
 /* ── Responsive ───────────────────────────────────────────────── */
 @media (max-width: 600px) {
     .rhcm-cal-day { min-height: 50px; }

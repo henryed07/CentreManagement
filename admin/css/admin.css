@@ -84,3 +84,8 @@
 .rhcm-field-full { grid-column: 1 / -1; }
 
 .rhcm-form p { margin-top: 16px; }
+
+/* ── Image picker ─────────────────────────────────────────────── */
+.rhcm-img-picker { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+.rhcm-img-picker img { border-radius: 6px; max-width: 320px; border: 1px solid #dde1ea; }
+.rhcm-img-picker .button { margin-right: 6px; }
