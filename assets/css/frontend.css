@@ -562,19 +562,19 @@
     text-transform: uppercase;
 }
 
-.rhcm-mem-icon    { font-size: 2.6rem; margin-bottom: 14px; display: block; }
-.rhcm-mem-name    { font-size: 1.1rem; font-weight: 600; color: #fff; margin-bottom: 8px; }
-.rhcm-mem-tagline { font-size: .88rem; color: rgba(255,255,255,.75); margin-bottom: 2px; line-height: 1.5; }
+.rhcm-mem-icon    { font-size: 3.2rem; margin-bottom: 16px; display: block; }
+.rhcm-mem-name    { font-size: .9rem; font-weight: 500; color: rgba(255,255,255,.8); margin-bottom: 6px; }
+.rhcm-mem-tagline { font-size: 1.1rem; color: #fff; font-weight: 600; margin-bottom: 4px; line-height: 1.55; }
 
 .rhcm-mem-price {
     font-size: 3rem;
     font-weight: 800;
     color: var(--rhcm-gold);
-    margin: 16px 0 4px;
+    margin: 18px 0 4px;
     line-height: 1;
     letter-spacing: -.01em;
 }
-.rhcm-mem-period { font-size: .88rem; color: rgba(255,255,255,.6); margin-top: 2px; }
+.rhcm-mem-period { font-size: .9rem; color: rgba(255,255,255,.7); margin-top: 4px; }
 
 .rhcm-mem-body {
     padding: 24px 26px;
@@ -612,13 +612,14 @@
 
 .rhcm-mem-cta { margin-top: auto; }
 .rhcm-mem-cta .rhcm-btn {
-    font-size: .95rem;
-    padding: 14px;
+    font-size: 1rem;
+    padding: 18px;
     background: var(--rhcm-gold);
     color: var(--rhcm-navy);
     font-weight: 700;
-    border-radius: 10px;
+    border-radius: 12px;
     border: 2.5px solid var(--rhcm-navy);
+    letter-spacing: .01em;
 }
 .rhcm-mem-cta .rhcm-btn:hover { opacity: .88; }
 
