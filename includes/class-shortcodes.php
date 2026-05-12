@@ -354,11 +354,11 @@ class RHCM_Shortcodes {
             echo '<div class="rhcm-notice rhcm-notice-error">Please fill in all required fields and try again.</div>';
         }
 
-        <?php if ( ! empty( $course['image_url'] ) ): ?>
-        <img class="rhcm-course-img-header" src="<?= esc_url( $course['image_url'] ) ?>" alt="<?= esc_attr( $course['title'] ) ?>">
-        <?php endif; ?>
+        if ( ! empty( $course['image_url'] ) ) {
+            echo '<img class="rhcm-course-img-header" src="' . esc_url( $course['image_url'] ) . '" alt="' . esc_attr( $course['title'] ) . '">';
+        }
 
-        <?php if ( empty( $sessions ) ): ?>
+        if ( empty( $sessions ) ): ?>
         <div class="rhcm-empty-month">
             <div class="rhcm-empty-icon">&#128197;</div>
             <h3>No upcoming sessions</h3>
