@@ -194,7 +194,7 @@ UNIQUE KEY code (code)
 
         $sql = "
             SELECT s.*,
-                   c.title, c.icon, c.category, c.price, c.duration, c.level, c.rya_cert, c.description,
+                   c.title, c.icon, c.category, c.price, c.duration, c.level, c.rya_cert, c.description, c.image_url,
                    COALESCE(s.spaces, c.max_participants) AS total_spaces,
                    (SELECT COUNT(*) FROM {$wpdb->prefix}rhcm_bookings b
                     WHERE b.session_id = s.id AND b.status = 'confirmed') AS enrolled
@@ -215,7 +215,7 @@ UNIQUE KEY code (code)
         $cc = $wpdb->prefix . 'rhcm_courses';
         return $wpdb->get_row(
             $wpdb->prepare(
-                "SELECT s.*, c.title, c.icon, c.category, c.price, c.duration, c.level, c.rya_cert, c.description,
+                "SELECT s.*, c.title, c.icon, c.category, c.price, c.duration, c.level, c.rya_cert, c.description, c.image_url,
                         COALESCE(s.spaces, c.max_participants) AS total_spaces,
                         (SELECT COUNT(*) FROM {$wpdb->prefix}rhcm_bookings b WHERE b.session_id = s.id AND b.status = 'confirmed') AS enrolled
                  FROM $cs s JOIN $cc c ON s.course_id = c.id

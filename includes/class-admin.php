@@ -178,7 +178,7 @@ class RHCM_Admin {
                     <input type="text" name="level" value="<?= esc_attr( $c['level'] ?? '' ) ?>" placeholder="e.g. Beginner">
                 </div>
                 <div class="rhcm-field">
-                    <label>RYA Certificate</label>
+                    <label>Requires Level <small>(prerequisite shown on cards)</small></label>
                     <input type="text" name="rya_cert" value="<?= esc_attr( $c['rya_cert'] ?? '' ) ?>" placeholder="e.g. RYA Level 1">
                 </div>
                 <div class="rhcm-field">

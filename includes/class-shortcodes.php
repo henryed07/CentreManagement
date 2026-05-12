@@ -271,8 +271,13 @@ class RHCM_Shortcodes {
                 : date( 'j F', strtotime( $s['start_date'] ) ) . ' – ' . date( 'j F Y', strtotime( $s['end_date'] ) );
             $day_num  = (int) date( 'j', strtotime( $s['start_date'] ) );
             $border   = $colors[$s['category']] ?? '#0a2342';
+            $s_img    = $s['image_url'] ?? '';
         ?>
-        <div class="rhcm-session-card" id="rhcm-day-<?= $day_num ?>-<?= (int) $s['id'] ?>" style="border-top-color:<?= esc_attr( $border ) ?>">
+        <div class="rhcm-session-card<?= $s_img ? ' rhcm-card-has-img' : '' ?>" id="rhcm-day-<?= $day_num ?>-<?= (int) $s['id'] ?>" style="border-top-color:<?= esc_attr( $border ) ?>">
+            <?php if ( $s_img ): ?>
+            <img class="rhcm-card-img" src="<?= esc_url( $s_img ) ?>" alt="<?= esc_attr( $s['title'] ) ?>">
+            <div class="rhcm-card-content">
+            <?php endif; ?>
             <div class="rhcm-sc-header">
                 <h3><?= esc_html( $s['icon'] . ' ' . $s['title'] ) ?></h3>
                 <span class="rhcm-price">&pound;<?= esc_html( number_format( (float) $s['price'], 0 ) ) ?></span>
@@ -281,7 +286,7 @@ class RHCM_Shortcodes {
                 <span>&#128197; <?= $date_str ?></span>
                 <?php if ( $s['duration'] ): ?><span>&#9201; <?= esc_html( $s['duration'] ) ?></span><?php endif; ?>
                 <?php if ( $s['level'] ):    ?><span><?= esc_html( $s['level'] ) ?></span><?php endif; ?>
-                <?php if ( $s['rya_cert'] ): ?><span>&#127903; <?= esc_html( $s['rya_cert'] ) ?></span><?php endif; ?>
+                <?php if ( $s['rya_cert'] ): ?><span class="rhcm-req-badge"><strong>REQUIRES:</strong> <?= esc_html( $s['rya_cert'] ) ?></span><?php endif; ?>
                 <?php if ( $s['total_spaces'] ): ?><span>&#128101; Max <?= (int) $s['total_spaces'] ?></span><?php endif; ?>
             </div>
             <?php if ( $s['description'] ): ?><p class="rhcm-desc"><?= esc_html( $s['description'] ) ?></p><?php endif; ?>
@@ -306,6 +311,7 @@ class RHCM_Shortcodes {
                     data-full="<?= $full ? '1' : '0' ?>">
                 <?= $full ? 'Join Waiting List' : 'Add to Cart' ?>
             </button>
+            <?php if ( $s_img ): ?></div><?php endif; ?>
         </div>
         <?php endforeach; ?>
         </div>
@@ -385,7 +391,7 @@ class RHCM_Shortcodes {
                 <span>&#128197; <?= $date_str ?></span>
                 <?php if ( $s['duration'] ): ?><span>&#9201; <?= esc_html( $s['duration'] ) ?></span><?php endif; ?>
                 <?php if ( $s['level'] ):    ?><span><?= esc_html( $s['level'] ) ?></span><?php endif; ?>
-                <?php if ( $s['rya_cert'] ): ?><span>&#127903; <?= esc_html( $s['rya_cert'] ) ?></span><?php endif; ?>
+                <?php if ( $s['rya_cert'] ): ?><span class="rhcm-req-badge"><strong>REQUIRES:</strong> <?= esc_html( $s['rya_cert'] ) ?></span><?php endif; ?>
                 <?php if ( $s['total_spaces'] ): ?><span>&#128101; Max <?= (int) $s['total_spaces'] ?></span><?php endif; ?>
             </div>
             <?php if ( $s['description'] ): ?><p class="rhcm-desc"><?= esc_html( $s['description'] ) ?></p><?php endif; ?>
@@ -442,6 +448,7 @@ class RHCM_Shortcodes {
         <div class="rhcm-session-card<?= $course_img ? ' rhcm-card-has-img' : '' ?>" style="border-top-color:<?= esc_attr( $color ) ?>">
             <?php if ( $course_img ): ?>
             <img class="rhcm-card-img" src="<?= esc_url( $course_img ) ?>" alt="<?= esc_attr( $course['title'] ) ?>">
+            <div class="rhcm-card-content">
             <?php endif; ?>
             <div class="rhcm-sc-header">
                 <h3><?= $icon ?><?= esc_html( $course['title'] ) ?></h3>
@@ -453,7 +460,7 @@ class RHCM_Shortcodes {
             <div class="rhcm-meta">
                 <?php if ( $course['duration'] ): ?><span>&#9201; <?= esc_html( $course['duration'] ) ?></span><?php endif; ?>
                 <?php if ( $course['level'] ):    ?><span><?= esc_html( $course['level'] ) ?></span><?php endif; ?>
-                <?php if ( $course['rya_cert'] ): ?><span>&#127903; <?= esc_html( $course['rya_cert'] ) ?></span><?php endif; ?>
+                <?php if ( $course['rya_cert'] ): ?><span class="rhcm-req-badge"><strong>REQUIRES:</strong> <?= esc_html( $course['rya_cert'] ) ?></span><?php endif; ?>
                 <?php if ( $course['max_participants'] ): ?><span>&#128101; Max <?= (int) $course['max_participants'] ?></span><?php endif; ?>
             </div>
 
@@ -464,6 +471,7 @@ class RHCM_Shortcodes {
             <a href="<?= esc_url( $atts['schedule_url'] ) ?>" class="rhcm-btn rhcm-btn-primary rhcm-btn-full">
                 View Schedule &rarr;
             </a>
+            <?php if ( $course_img ): ?></div><?php endif; ?>
         </div>
         <?php
         return ob_get_clean();
@@ -526,14 +534,15 @@ class RHCM_Shortcodes {
 
             <div class="rhcm-session-grid">
             <?php foreach ( $cat_courses as $course ):
-                $price     = (float) $course['price'];
-                $icon      = $course['icon'] ? esc_html( $course['icon'] ) . ' ' : '';
-                $desc      = esc_html( $course['description'] ?? '' );
+                $price      = (float) $course['price'];
+                $icon       = $course['icon'] ? esc_html( $course['icon'] ) . ' ' : '';
+                $desc       = esc_html( $course['description'] ?? '' );
                 $course_img = $course['image_url'] ?? '';
             ?>
             <div class="rhcm-session-card<?= $course_img ? ' rhcm-card-has-img' : '' ?>" style="border-top-color:<?= esc_attr( $color ) ?>">
                 <?php if ( $course_img ): ?>
                 <img class="rhcm-card-img" src="<?= esc_url( $course_img ) ?>" alt="<?= esc_attr( $course['title'] ) ?>">
+                <div class="rhcm-card-content">
                 <?php endif; ?>
                 <div class="rhcm-sc-header">
                     <h3><?= $icon ?><?= esc_html( $course['title'] ) ?></h3>
@@ -545,7 +554,7 @@ class RHCM_Shortcodes {
                 <div class="rhcm-meta">
                     <?php if ( $course['duration'] ): ?><span>&#9201; <?= esc_html( $course['duration'] ) ?></span><?php endif; ?>
                     <?php if ( $course['level'] ):    ?><span><?= esc_html( $course['level'] ) ?></span><?php endif; ?>
-                    <?php if ( $course['rya_cert'] ): ?><span>&#127903; <?= esc_html( $course['rya_cert'] ) ?></span><?php endif; ?>
+                    <?php if ( $course['rya_cert'] ): ?><span class="rhcm-req-badge"><strong>REQUIRES:</strong> <?= esc_html( $course['rya_cert'] ) ?></span><?php endif; ?>
                     <?php if ( $course['max_participants'] ): ?><span>&#128101; Max <?= (int) $course['max_participants'] ?></span><?php endif; ?>
                 </div>
 
@@ -556,6 +565,7 @@ class RHCM_Shortcodes {
                 <a href="<?= esc_url( $atts['schedule_url'] ) ?>" class="rhcm-btn rhcm-btn-primary rhcm-btn-full">
                     View Schedule &rarr;
                 </a>
+                <?php if ( $course_img ): ?></div><?php endif; ?>
             </div>
             <?php endforeach; ?>
             </div>
