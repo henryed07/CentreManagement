@@ -2,14 +2,14 @@
 /**
  * Plugin Name: Centre Management
  * Description: Course calendar and booking system with [rhcm_schedule] and [rhcm_course] shortcodes.
- * Version:     1.2.7
+ * Version:     1.2.8
  * Author:      Queen Mary Sailing Club
  * Text Domain: rh-centre-management
  */
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'RHCM_VERSION', '1.2.7' );
+define( 'RHCM_VERSION', '1.2.8' );
 define( 'RHCM_PATH',    plugin_dir_path( __FILE__ ) );
 define( 'RHCM_URL',     plugin_dir_url( __FILE__ ) );
 
