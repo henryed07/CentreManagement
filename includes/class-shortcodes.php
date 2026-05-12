@@ -670,7 +670,15 @@ class RHCM_Shortcodes {
                 <span class="rhcm-featured-badge">Most Popular</span>
                 <?php endif; ?>
             </div>
-            <div class="rhcm-mem-title-strip"><?= esc_html( $m['name'] ) ?></div>
+            <div class="rhcm-mem-title-strip">
+                <div class="rhcm-mem-name"><?= esc_html( $m['name'] ) ?></div>
+                <?php if ( $m['price'] ): ?>
+                <div class="rhcm-mem-price"><?= esc_html( $m['price'] ) ?></div>
+                <?php endif; ?>
+                <?php if ( $m['frequency'] ): ?>
+                <div class="rhcm-mem-freq"><?= esc_html( $m['frequency'] ) ?></div>
+                <?php endif; ?>
+            </div>
             <div class="rhcm-mem-body">
                 <?php if ( $m['tagline'] ): ?>
                 <p class="rhcm-mem-tagline"><?= esc_html( $m['tagline'] ) ?></p>
@@ -680,15 +688,7 @@ class RHCM_Shortcodes {
                     <?php foreach ( $lines as $line ): ?><li><?= esc_html( $line ) ?></li><?php endforeach; ?>
                 </ul>
                 <?php endif; ?>
-                <?php if ( $m['price'] || $m['frequency'] ): ?>
-                <div class="rhcm-mem-price-area">
-                    <?php if ( $m['price'] ): ?><span class="rhcm-mem-price"><?= esc_html( $m['price'] ) ?></span><?php endif; ?>
-                    <?php if ( $m['frequency'] ): ?><span class="rhcm-mem-freq"><?= esc_html( $m['frequency'] ) ?></span><?php endif; ?>
-                </div>
-                <?php endif; ?>
-                <?php if ( $m['info_url'] ): ?>
-                <a href="<?= esc_url( $m['info_url'] ) ?>" class="rhcm-mem-btn">Find Out More &rarr;</a>
-                <?php endif; ?>
+                <a href="<?= $m['info_url'] ? esc_url( $m['info_url'] ) : '#' ?>" class="rhcm-mem-btn">Find Out More &rarr;</a>
             </div>
         </div>
         <?php
