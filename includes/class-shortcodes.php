@@ -3,6 +3,8 @@ defined( 'ABSPATH' ) || exit;
 
 class RHCM_Shortcodes {
 
+    private static $tab_items = [];
+
     public function __construct() {
         add_shortcode( 'rhcm_schedule',     [ $this, 'render_schedule' ] );
         add_shortcode( 'rhcm_course',       [ $this, 'render_course' ] );
@@ -11,6 +13,8 @@ class RHCM_Shortcodes {
         add_shortcode( 'rhcm_tag',          [ $this, 'render_tag' ] );
         add_shortcode( 'rhcm_memberships',  [ $this, 'render_memberships' ] );
         add_shortcode( 'rhcm_session',      [ $this, 'render_session_detail' ] );
+        add_shortcode( 'rhcm_tabs',         [ $this, 'render_tabs' ] );
+        add_shortcode( 'rhcm_tab',          [ $this, 'render_tab' ] );
         add_action( 'wp_enqueue_scripts', [ $this, 'enqueue' ] );
         add_action( 'init',              [ $this, 'handle_booking_post' ] );
         add_action( 'wp_ajax_rhcm_validate_discount',        [ $this, 'ajax_validate_discount' ] );
@@ -20,7 +24,7 @@ class RHCM_Shortcodes {
     public function enqueue() {
         global $post;
         if ( ! $post ) return;
-        $shortcodes = [ 'rhcm_schedule', 'rhcm_course', 'rhcm_course_card', 'rhcm_courses', 'rhcm_tag', 'rhcm_memberships', 'rhcm_session' ];
+        $shortcodes = [ 'rhcm_schedule', 'rhcm_course', 'rhcm_course_card', 'rhcm_courses', 'rhcm_tag', 'rhcm_memberships', 'rhcm_session', 'rhcm_tabs' ];
         $needs_assets = false;
         foreach ( $shortcodes as $sc ) {
             if ( has_shortcode( $post->post_content, $sc ) ) { $needs_assets = true; break; }
@@ -610,6 +614,51 @@ class RHCM_Shortcodes {
         return '<span class="rhcm-cat-tag" style="background:' . esc_attr( $color ) . '">' . esc_html( $label ) . '</span>';
     }
 
+    // ── [rhcm_tabs] / [rhcm_tab label="X"] ───────────────────────────────────
+
+    public function render_tabs( $atts, $content = '' ) {
+        self::$tab_items = [];
+        do_shortcode( $content ); // executes [rhcm_tab] children, populating $tab_items
+
+        if ( empty( self::$tab_items ) ) return do_shortcode( $content );
+
+        $uid = 'rhcm-tabs-' . wp_unique_id();
+        ob_start();
+        ?>
+        <div class="rhcm-tabs" id="<?= esc_attr( $uid ) ?>">
+            <div class="rhcm-tab-nav" role="tablist">
+                <?php foreach ( self::$tab_items as $i => $tab ): ?>
+                <button class="rhcm-tab-btn<?= $i === 0 ? ' rhcm-tab-active' : '' ?>"
+                        role="tab"
+                        data-tab="<?= esc_attr( $uid . '-' . $i ) ?>"
+                        aria-selected="<?= $i === 0 ? 'true' : 'false' ?>"
+                        aria-controls="<?= esc_attr( $uid . '-' . $i ) ?>">
+                    <?= esc_html( $tab['label'] ) ?>
+                </button>
+                <?php endforeach; ?>
+            </div>
+            <?php foreach ( self::$tab_items as $i => $tab ): ?>
+            <div class="rhcm-tab-panel"
+                 id="<?= esc_attr( $uid . '-' . $i ) ?>"
+                 role="tabpanel"
+                 <?= $i !== 0 ? 'hidden' : '' ?>>
+                <?= $tab['content'] ?>
+            </div>
+            <?php endforeach; ?>
+        </div>
+        <?php
+        return ob_get_clean();
+    }
+
+    public function render_tab( $atts, $content = '' ) {
+        $atts = shortcode_atts( [ 'label' => 'Tab' ], $atts );
+        self::$tab_items[] = [
+            'label'   => sanitize_text_field( $atts['label'] ),
+            'content' => do_shortcode( $content ),
+        ];
+        return '';
+    }
+
     // ── [rhcm_memberships category=""] ────────────────────────────────────────
 
     public function render_memberships( array $atts ) {
@@ -636,6 +685,8 @@ class RHCM_Shortcodes {
         $lines    = array_filter( array_map( 'trim', explode( "\n", $m['details'] ?? '' ) ) );
         $price    = trim( $m['price'] ?? '' );
         $freq     = trim( $m['frequency'] ?? '' );
+        $icon     = trim( $m['icon'] ?? '' );
+        $tagline  = trim( $m['tagline'] ?? '' );
 
         ob_start();
         ?>
@@ -644,20 +695,21 @@ class RHCM_Shortcodes {
                 <?php if ( $featured ): ?>
                 <span class="rhcm-featured-badge">Most Popular</span>
                 <?php endif; ?>
+                <?php if ( $icon ): ?>
+                <span class="rhcm-mem-icon"><?= esc_html( $icon ) ?></span>
+                <?php endif; ?>
+                <div class="rhcm-mem-name"><?= esc_html( $m['name'] ) ?></div>
+                <?php if ( $tagline ): ?>
+                <div class="rhcm-mem-tagline"><?= esc_html( $tagline ) ?></div>
+                <?php endif; ?>
                 <?php if ( $price ): ?>
-                <div class="rhcm-mem-price-display">
-                    <span class="rhcm-mem-price"><?= esc_html( $price ) ?></span>
-                    <?php if ( $freq ): ?><span class="rhcm-mem-freq-inline"><?= esc_html( $freq ) ?></span><?php endif; ?>
-                </div>
+                <span class="rhcm-mem-price"><?= esc_html( $price ) ?></span>
+                <?php if ( $freq ): ?><span class="rhcm-mem-freq-inline"><?= esc_html( $freq ) ?></span><?php endif; ?>
                 <?php else: ?>
                 <span class="rhcm-mem-contact-pill">Contact us for price</span>
                 <?php endif; ?>
             </div>
             <div class="rhcm-mem-body">
-                <h3 class="rhcm-mem-name"><?= esc_html( $m['name'] ) ?></h3>
-                <?php if ( $m['tagline'] ): ?>
-                <p class="rhcm-mem-tagline"><?= esc_html( $m['tagline'] ) ?></p>
-                <?php endif; ?>
                 <?php if ( ! empty( $lines ) ): ?>
                 <ul class="rhcm-mem-features">
                     <?php foreach ( $lines as $line ): ?><li><?= esc_html( $line ) ?></li><?php endforeach; ?>

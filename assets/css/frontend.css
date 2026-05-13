@@ -538,68 +538,94 @@
 /* ── Membership grid ──────────────────────────────────────────── */
 .rhcm-mem-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 24px;
 }
 
 /* ── Membership card ──────────────────────────────────────────── */
 .rhcm-mem-card {
+    border: 2px solid var(--rhcm-light);
     border-radius: 16px;
     overflow: hidden;
     background: #fff;
-    box-shadow: 0 2px 12px rgba(0,0,0,.10);
     display: flex;
     flex-direction: column;
-    transition: transform .2s, box-shadow .2s;
+    transition: border-color .2s, transform .2s;
 }
 .rhcm-mem-card:hover {
+    border-color: #4a9eca;
     transform: translateY(-3px);
-    box-shadow: 0 8px 24px rgba(0,0,0,.16);
+}
+.rhcm-mem-featured {
+    border-color: var(--rhcm-gold);
+}
+.rhcm-mem-featured:hover {
+    border-color: var(--rhcm-gold);
 }
 
-/* Navy price header */
+/* Card header (navy background) */
 .rhcm-mem-price-header {
     background: var(--rhcm-navy);
-    padding: 22px 18px 18px;
-    text-align: center;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-height: 80px;
+    padding: 28px 24px 22px;
     position: relative;
+    color: #fff;
+}
+.rhcm-mem-featured .rhcm-mem-price-header {
+    background: linear-gradient(135deg, var(--rhcm-navy) 0%, #1a3a5c 100%);
 }
 
+/* Most Popular badge */
 .rhcm-featured-badge {
     position: absolute;
-    top: 10px;
-    right: 12px;
+    top: 14px;
+    right: 14px;
     background: var(--rhcm-gold);
     color: var(--rhcm-navy);
-    font-size: .68rem;
-    font-weight: 800;
+    font-size: .72rem;
+    font-weight: 700;
     padding: 4px 12px;
     border-radius: 100px;
-    letter-spacing: .08em;
+    letter-spacing: .06em;
     text-transform: uppercase;
 }
 
-.rhcm-mem-price-display {
-    display: flex;
-    align-items: baseline;
-    gap: 2px;
+/* Icon (emoji) in header */
+.rhcm-mem-icon {
+    display: block;
+    font-size: 2rem;
+    margin-bottom: 10px;
+    line-height: 1;
 }
+
+/* Name + tagline in header */
+.rhcm-mem-name {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #fff;
+    margin: 0 0 6px;
+    line-height: 1.3;
+}
+.rhcm-mem-tagline {
+    font-size: .86rem;
+    color: rgba(255,255,255,.72);
+    line-height: 1.5;
+    margin: 0 0 4px;
+}
+
+/* Price + frequency */
 .rhcm-mem-price {
     font-size: 2.2rem;
     font-weight: 800;
     color: var(--rhcm-gold);
+    margin: 14px 0 2px;
     line-height: 1;
     letter-spacing: -.02em;
+    display: block;
 }
 .rhcm-mem-freq-inline {
-    font-size: .9rem;
-    color: rgba(255,255,255,.75);
-    font-weight: 400;
+    font-size: .88rem;
+    color: rgba(255,255,255,.6);
+    display: block;
 }
 .rhcm-mem-contact-pill {
     display: inline-block;
@@ -608,42 +634,31 @@
     border-radius: 100px;
     padding: 7px 16px;
     font-size: .82rem;
+    margin-top: 12px;
 }
 
-/* Card body */
+/* Card body (features + button) */
 .rhcm-mem-body {
-    padding: 18px 20px 20px;
+    padding: 20px 24px 22px;
     flex: 1;
     display: flex;
     flex-direction: column;
 }
-.rhcm-mem-name {
-    font-size: 1.05rem;
-    font-weight: 700;
-    color: var(--rhcm-navy);
-    margin: 0 0 8px;
-    line-height: 1.3;
-}
-.rhcm-mem-tagline {
-    font-size: .86rem;
-    color: var(--rhcm-muted);
-    line-height: 1.55;
-    margin: 0 0 16px;
-    flex: 1;
-}
 
+/* Features list */
 .rhcm-mem-features {
     list-style: none;
     padding: 0;
-    margin: 0 0 16px;
+    margin: 0 0 20px;
+    flex: 1;
 }
 .rhcm-mem-features li {
     display: flex;
     align-items: flex-start;
     gap: 9px;
-    padding: 7px 0;
+    padding: 8px 0;
     border-bottom: 1px solid var(--rhcm-light);
-    font-size: .86rem;
+    font-size: .88rem;
     color: #374151;
     line-height: 1.45;
 }
@@ -657,15 +672,16 @@
     margin-top: 1px;
 }
 
+/* CTA button */
 .rhcm-mem-btn {
     display: block;
     width: 100%;
-    padding: 12px 16px;
+    padding: 13px 16px;
     background: var(--rhcm-navy);
     color: #fff;
     text-align: center;
     border-radius: 8px;
-    font-size: .88rem;
+    font-size: .92rem;
     font-weight: 600;
     text-decoration: none;
     cursor: pointer;
@@ -675,6 +691,11 @@
     margin-top: auto;
 }
 .rhcm-mem-btn:hover { opacity: .87; color: #fff; }
+.rhcm-mem-featured .rhcm-mem-btn {
+    background: var(--rhcm-gold);
+    color: var(--rhcm-navy);
+}
+.rhcm-mem-featured .rhcm-mem-btn:hover { opacity: .88; color: var(--rhcm-navy); }
 
 /* ── Course card overview [rhcm_course_card] ──────────────────── */
 .rhcm-course-card-overview {
@@ -835,6 +856,35 @@
     margin-bottom: 24px;
     display: block;
 }
+
+/* ── Tabs [rhcm_tabs] ─────────────────────────────────────────── */
+.rhcm-tab-nav {
+    display: flex;
+    gap: 0;
+    border-bottom: 2px solid var(--rhcm-light);
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+}
+.rhcm-tab-btn {
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+    padding: 12px 24px;
+    font-size: .95rem;
+    font-weight: 600;
+    color: var(--rhcm-muted);
+    cursor: pointer;
+    font-family: inherit;
+    transition: color .15s, border-color .15s;
+    white-space: nowrap;
+}
+.rhcm-tab-btn:hover { color: var(--rhcm-navy); }
+.rhcm-tab-btn.rhcm-tab-active {
+    color: var(--rhcm-navy);
+    border-bottom-color: var(--rhcm-navy);
+}
+.rhcm-tab-panel[hidden] { display: none; }
 
 /* ── Session detail [rhcm_session] ────────────────────────────── */
 .rhcm-session-detail {
@@ -1031,8 +1081,5 @@
     .rhcm-cal-dot { width: 7px; height: 7px; }
     .rhcm-day-num { font-size: .72rem; }
     .rhcm-modal-box { padding: 22px 16px; }
-    .rhcm-mem-grid { grid-template-columns: 1fr 1fr; }
-}
-@media (max-width: 420px) {
     .rhcm-mem-grid { grid-template-columns: 1fr; }
 }

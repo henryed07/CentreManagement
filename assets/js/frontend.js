@@ -213,6 +213,27 @@
             return;
         }
 
+        // Tab switching
+        var tabBtn = e.target.closest('.rhcm-tab-btn');
+        if (tabBtn) {
+            var tabsEl = tabBtn.closest('.rhcm-tabs');
+            if (tabsEl) {
+                var targetId = tabBtn.dataset.tab;
+                tabsEl.querySelectorAll('.rhcm-tab-btn').forEach(function (b) {
+                    b.classList.remove('rhcm-tab-active');
+                    b.setAttribute('aria-selected', 'false');
+                });
+                tabsEl.querySelectorAll('.rhcm-tab-panel').forEach(function (p) {
+                    p.hidden = true;
+                });
+                tabBtn.classList.add('rhcm-tab-active');
+                tabBtn.setAttribute('aria-selected', 'true');
+                var panel = document.getElementById(targetId);
+                if (panel) panel.hidden = false;
+            }
+            return;
+        }
+
         // Spaces stepper: minus
         var minusBtn = e.target.closest('.rhcm-spaces-minus');
         if (minusBtn) {
