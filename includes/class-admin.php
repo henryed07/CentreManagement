@@ -106,11 +106,12 @@ class RHCM_Admin {
 
         <table class="wp-list-table widefat fixed striped rhcm-table" style="margin-top:16px">
             <thead><tr>
-                <th>Title</th><th>Category</th><th>Price</th><th>Duration</th><th>Level</th><th>Participants</th><th>Active</th><th>Actions</th>
+                <th>Order</th><th>Title</th><th>Category</th><th>Price</th><th>Duration</th><th>Level</th><th>Participants</th><th>Active</th><th>Actions</th>
             </tr></thead>
             <tbody>
             <?php foreach ( $courses as $c ): ?>
             <tr>
+                <td><?= (int) $c['sort_order'] ?></td>
                 <td><strong><?= esc_html( $c['icon'] . ' ' . $c['title'] ) ?></strong></td>
                 <td><?= esc_html( ucfirst( $c['category'] ) ) ?></td>
                 <td>&pound;<?= esc_html( number_format( (float) $c['price'], 2 ) ) ?></td>
@@ -126,7 +127,7 @@ class RHCM_Admin {
                 </td>
             </tr>
             <?php endforeach; ?>
-            <?php if ( empty( $courses ) ): ?><tr><td colspan="8">No courses yet. <a href="<?= esc_url( admin_url( 'admin.php?page=rhcm-courses&action=new' ) ) ?>">Add one</a>.</td></tr><?php endif; ?>
+            <?php if ( empty( $courses ) ): ?><tr><td colspan="9">No courses yet. <a href="<?= esc_url( admin_url( 'admin.php?page=rhcm-courses&action=new' ) ) ?>">Add one</a>.</td></tr><?php endif; ?>
             </tbody>
         </table>
         </div>
@@ -155,6 +156,10 @@ class RHCM_Admin {
                 <div class="rhcm-field">
                     <label>Icon (emoji)</label>
                     <input type="text" name="icon" value="<?= esc_attr( $c['icon'] ?? '' ) ?>" placeholder="&#9925;" style="max-width:80px">
+                </div>
+                <div class="rhcm-field">
+                    <label>Sort Order <small>(lower = first within category)</small></label>
+                    <input type="number" name="sort_order" value="<?= esc_attr( $c['sort_order'] ?? 0 ) ?>" style="max-width:100px">
                 </div>
                 <div class="rhcm-field">
                     <label>Category</label>
@@ -1133,15 +1138,25 @@ class RHCM_Admin {
     // ── Shortcodes & Help ─────────────────────────────────────────────────────
 
     public function page_settings() {
-        $cats = RHCM_DB::category_labels();
+        $cats    = RHCM_DB::category_labels();
+        $courses = RHCM_DB::get_courses( [ 'is_active' => 1 ] );
         ?>
         <div class="wrap rhcm-wrap">
         <h1>Shortcodes &amp; Help</h1>
-        <p style="color:#6b7280;margin-bottom:28px">
+        <p style="color:#6b7280;margin-bottom:20px">
             Place these shortcodes in any WordPress page or post to display the booking system on your site.
         </p>
 
-        <!-- ── [rhcm_schedule] ── -->
+        <!-- Tab nav -->
+        <nav class="nav-tab-wrapper rhcm-help-tab-nav" style="margin-bottom:24px">
+            <a href="#" class="nav-tab nav-tab-active" data-rhcm-tab="rhcm-tab-courses">Course Shortcodes</a>
+            <a href="#" class="nav-tab" data-rhcm-tab="rhcm-tab-memberships">Membership Shortcodes</a>
+        </nav>
+
+        <!-- ── Course Shortcodes tab ── -->
+        <div id="rhcm-tab-courses" class="rhcm-tab-content">
+
+        <!-- [rhcm_schedule] -->
         <div class="rhcm-help-card">
             <div class="rhcm-help-card-header">
                 <code class="rhcm-sc-code">[rhcm_schedule]</code>
@@ -1152,7 +1167,6 @@ class RHCM_Admin {
                 and a grid of session cards below the calendar. Visitors can click a calendar day to jump to its sessions.
                 Each card shows the course title, date, price, capacity bar, and an <strong>Add to Cart</strong> button.
             </p>
-
             <h4 class="rhcm-help-params-title">Parameters</h4>
             <table class="rhcm-help-table">
                 <thead><tr><th>Parameter</th><th>Default</th><th>Description</th></tr></thead>
@@ -1164,7 +1178,6 @@ class RHCM_Admin {
                     </tr>
                 </tbody>
             </table>
-
             <h4 class="rhcm-help-params-title">Examples</h4>
             <div class="rhcm-help-examples">
                 <div class="rhcm-help-example">
@@ -1182,7 +1195,7 @@ class RHCM_Admin {
             </div>
         </div>
 
-        <!-- ── [rhcm_course] ── -->
+        <!-- [rhcm_course] -->
         <div class="rhcm-help-card">
             <div class="rhcm-help-card-header">
                 <code class="rhcm-sc-code">[rhcm_course id="X"]</code>
@@ -1193,7 +1206,6 @@ class RHCM_Admin {
                 Each card shows the session date, price, capacity bar, course description and an <strong>Add to Cart</strong> button.
                 Use this on a dedicated course page to let visitors book directly without browsing the full calendar.
             </p>
-
             <h4 class="rhcm-help-params-title">Parameters</h4>
             <table class="rhcm-help-table">
                 <thead><tr><th>Parameter</th><th>Default</th><th>Required</th><th>Description</th></tr></thead>
@@ -1212,7 +1224,6 @@ class RHCM_Admin {
                     </tr>
                 </tbody>
             </table>
-
             <h4 class="rhcm-help-params-title">Examples</h4>
             <div class="rhcm-help-examples">
                 <div class="rhcm-help-example">
@@ -1224,12 +1235,7 @@ class RHCM_Admin {
                     <span>Show only the next 3 sessions</span>
                 </div>
             </div>
-
-            <!-- Course ID quick reference -->
-            <?php
-            $courses = RHCM_DB::get_courses( [ 'is_active' => 1 ] );
-            if ( $courses ):
-            ?>
+            <?php if ( $courses ): ?>
             <h4 class="rhcm-help-params-title">Your Course IDs</h4>
             <table class="rhcm-help-table">
                 <thead><tr><th>ID</th><th>Course</th><th>Category</th><th>Shortcode</th></tr></thead>
@@ -1239,9 +1245,7 @@ class RHCM_Admin {
                     <td><strong><?= (int) $c['id'] ?></strong></td>
                     <td><?= esc_html( $c['icon'] . ' ' . $c['title'] ) ?></td>
                     <td><?= esc_html( ucfirst( $c['category'] ) ) ?></td>
-                    <td>
-                        <code class="rhcm-copy-code" title="Click to copy">[rhcm_course id="<?= (int) $c['id'] ?>"]</code>
-                    </td>
+                    <td><code class="rhcm-copy-code" title="Click to copy">[rhcm_course id="<?= (int) $c['id'] ?>"]</code></td>
                 </tr>
                 <?php endforeach; ?>
                 </tbody>
@@ -1249,7 +1253,7 @@ class RHCM_Admin {
             <?php endif; ?>
         </div>
 
-        <!-- ── [rhcm_course_card] ── -->
+        <!-- [rhcm_course_card] -->
         <div class="rhcm-help-card">
             <div class="rhcm-help-card-header">
                 <code class="rhcm-sc-code">[rhcm_course_card id="X"]</code>
@@ -1257,10 +1261,9 @@ class RHCM_Admin {
             </div>
             <p class="rhcm-help-desc">
                 Displays a single compact card for one course showing its title, price, duration, level, RYA certification,
-                description, and a <strong>View Schedule &rarr;</strong> link that takes visitors to your bookings page.
+                description, and a <strong>See Dates &amp; Book &rarr;</strong> link that takes visitors to your bookings page.
                 Use this on a homepage, course overview, or marketing page to highlight a specific course.
             </p>
-
             <h4 class="rhcm-help-params-title">Parameters</h4>
             <table class="rhcm-help-table">
                 <thead><tr><th>Parameter</th><th>Default</th><th>Required</th><th>Description</th></tr></thead>
@@ -1269,17 +1272,16 @@ class RHCM_Admin {
                         <td><code>id</code></td>
                         <td>&mdash;</td>
                         <td><span class="rhcm-required">Yes</span></td>
-                        <td>The numeric ID of the course. See the Course IDs table above.</td>
+                        <td>The numeric ID of the course.</td>
                     </tr>
                     <tr>
                         <td><code>schedule_url</code></td>
                         <td><code>/schedule</code></td>
                         <td>No</td>
-                        <td>The URL the "View Schedule" button links to. Set this to the page where you have placed <code>[rhcm_schedule]</code>.</td>
+                        <td>The URL the "See Dates &amp; Book" button links to.</td>
                     </tr>
                 </tbody>
             </table>
-
             <h4 class="rhcm-help-params-title">Examples</h4>
             <div class="rhcm-help-examples">
                 <div class="rhcm-help-example">
@@ -1291,7 +1293,6 @@ class RHCM_Admin {
                     <span>Link the button to /book instead</span>
                 </div>
             </div>
-
             <?php if ( $courses ): ?>
             <h4 class="rhcm-help-params-title">Your Course IDs</h4>
             <table class="rhcm-help-table">
@@ -1309,14 +1310,14 @@ class RHCM_Admin {
             <?php endif; ?>
         </div>
 
-        <!-- ── [rhcm_courses] ── -->
+        <!-- [rhcm_courses] -->
         <div class="rhcm-help-card">
             <div class="rhcm-help-card-header">
                 <code class="rhcm-sc-code">[rhcm_courses]</code>
                 <span class="rhcm-help-badge">Courses by Category</span>
             </div>
             <p class="rhcm-help-desc">
-                Displays active courses as session-style cards (title, price, duration, level, description, <strong>View Schedule &rarr;</strong> button).
+                Displays active courses as session-style cards (title, price, duration, level, description, <strong>See Dates &amp; Book &rarr;</strong> button).
                 Without <code>category</code>: shows all courses grouped under coloured category headings.
                 With <code>category</code>: shows only that category's courses as a flat card grid — no heading.
             </p>
@@ -1327,12 +1328,12 @@ class RHCM_Admin {
                     <tr>
                         <td><code>category</code></td>
                         <td><em>all</em></td>
-                        <td>Filter to a single category. Use the key values from the Category Reference table above.</td>
+                        <td>Filter to a single category. Use the key values from the Category Values reference card below.</td>
                     </tr>
                     <tr>
                         <td><code>schedule_url</code></td>
                         <td><code>/schedule</code></td>
-                        <td>URL the "View Schedule" button links to on every card.</td>
+                        <td>URL the "See Dates &amp; Book" button links to on every card.</td>
                     </tr>
                 </tbody>
             </table>
@@ -1353,7 +1354,39 @@ class RHCM_Admin {
             </div>
         </div>
 
-        <!-- ── [rhcm_tag] ── -->
+        <!-- [rhcm_session] -->
+        <div class="rhcm-help-card">
+            <div class="rhcm-help-card-header">
+                <code class="rhcm-sc-code">[rhcm_session id="X"]</code>
+                <span class="rhcm-help-badge">Session Detail Page</span>
+            </div>
+            <p class="rhcm-help-desc">
+                Displays a full two-column detail page for a single session: course info table on the left and a sticky order panel on the right.
+                The order panel includes a spaces stepper so visitors can book multiple places at once, a live subtotal, and an
+                <strong>Add to Cart</strong> button. Use this on a dedicated landing page for a specific session.
+            </p>
+            <h4 class="rhcm-help-params-title">Parameters</h4>
+            <table class="rhcm-help-table">
+                <thead><tr><th>Parameter</th><th>Default</th><th>Required</th><th>Description</th></tr></thead>
+                <tbody>
+                    <tr>
+                        <td><code>id</code></td>
+                        <td>&mdash;</td>
+                        <td><span class="rhcm-required">Yes</span></td>
+                        <td>The numeric ID of the session. Find this in the <a href="<?= esc_url( admin_url('admin.php?page=rhcm-sessions') ) ?>">Sessions</a> list (shown in the edit URL as <code>session_id=X</code>).</td>
+                    </tr>
+                </tbody>
+            </table>
+            <h4 class="rhcm-help-params-title">Examples</h4>
+            <div class="rhcm-help-examples">
+                <div class="rhcm-help-example">
+                    <code class="rhcm-copy-code">[rhcm_session id="12"]</code>
+                    <span>Full detail page for session #12</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- [rhcm_tag] -->
         <div class="rhcm-help-card">
             <div class="rhcm-help-card-header">
                 <code class="rhcm-sc-code">[rhcm_tag category="X"]</code>
@@ -1387,34 +1420,13 @@ class RHCM_Admin {
             </div>
         </div>
 
-        <!-- ── [rhcm_memberships] ── -->
-        <div class="rhcm-help-card">
-            <div class="rhcm-help-card-header">
-                <code class="rhcm-sc-code">[rhcm_memberships]</code>
-                <span class="rhcm-help-badge">Membership Cards</span>
-            </div>
-            <p class="rhcm-help-desc">
-                Displays all active membership options as a responsive grid of cards — matching the Queen Mary membership page layout.
-                Each card shows the icon, name, tagline, price, frequency, bullet-point features list, and a <strong>Find Out More</strong> button.
-                The card marked <em>Most Popular</em> is highlighted with a gold border and badge.
-                Manage options under <a href="<?= esc_url( admin_url('admin.php?page=rhcm-memberships') ) ?>">Centre Management &rarr; Memberships</a>.
-            </p>
-            <h4 class="rhcm-help-params-title">Examples</h4>
-            <div class="rhcm-help-examples">
-                <div class="rhcm-help-example">
-                    <code class="rhcm-copy-code">[rhcm_memberships]</code>
-                    <span>Show all active membership options</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- ── Category reference ── -->
+        <!-- Category reference -->
         <div class="rhcm-help-card">
             <div class="rhcm-help-card-header">
                 <span class="rhcm-sc-code" style="font-size:.95rem">Category Values</span>
                 <span class="rhcm-help-badge">Reference</span>
             </div>
-            <p class="rhcm-help-desc">Use these values in the <code>category</code> parameter of <code>[rhcm_schedule]</code>.</p>
+            <p class="rhcm-help-desc">Use these values in the <code>category</code> parameter of <code>[rhcm_schedule]</code>, <code>[rhcm_courses]</code>, and <code>[rhcm_tag]</code>.</p>
             <table class="rhcm-help-table">
                 <thead><tr><th>Value</th><th>Label shown on site</th></tr></thead>
                 <tbody>
@@ -1426,7 +1438,7 @@ class RHCM_Admin {
             </table>
         </div>
 
-        <!-- ── Cart behaviour ── -->
+        <!-- Basket & Checkout -->
         <div class="rhcm-help-card">
             <div class="rhcm-help-card-header">
                 <span class="rhcm-sc-code" style="font-size:.95rem">Basket &amp; Checkout</span>
@@ -1443,9 +1455,63 @@ class RHCM_Admin {
             </ul>
         </div>
 
+        </div><!-- #rhcm-tab-courses -->
+
+        <!-- ── Membership Shortcodes tab ── -->
+        <div id="rhcm-tab-memberships" class="rhcm-tab-content" style="display:none">
+
+        <!-- [rhcm_memberships] -->
+        <div class="rhcm-help-card">
+            <div class="rhcm-help-card-header">
+                <code class="rhcm-sc-code">[rhcm_memberships]</code>
+                <span class="rhcm-help-badge">Membership Cards</span>
+            </div>
+            <p class="rhcm-help-desc">
+                Displays active membership options as a responsive grid of cards.
+                Each card shows the icon, name, tagline, price, frequency, bullet-point features list, and a <strong>Find Out More</strong> button.
+                The card marked <em>Most Popular</em> is highlighted with a gold border and badge.
+                Manage options under <a href="<?= esc_url( admin_url('admin.php?page=rhcm-memberships') ) ?>">Centre Management &rarr; Memberships</a>.
+            </p>
+            <h4 class="rhcm-help-params-title">Parameters</h4>
+            <table class="rhcm-help-table">
+                <thead><tr><th>Parameter</th><th>Default</th><th>Description</th></tr></thead>
+                <tbody>
+                    <tr>
+                        <td><code>category</code></td>
+                        <td><em>all</em></td>
+                        <td>Filter to a single membership category. Use the category slug set in <a href="<?= esc_url( admin_url('admin.php?page=rhcm-mem-categories') ) ?>">Membership Categories</a>.</td>
+                    </tr>
+                    <tr>
+                        <td><code>layout</code></td>
+                        <td><code>cards</code></td>
+                        <td><code>cards</code> — full cards with icon, name, features list and button. <code>tiles</code> — compact price-header tiles (price large in navy header, name + tagline below, no button). Good for overview/comparison grids.</td>
+                    </tr>
+                </tbody>
+            </table>
+            <h4 class="rhcm-help-params-title">Examples</h4>
+            <div class="rhcm-help-examples">
+                <div class="rhcm-help-example">
+                    <code class="rhcm-copy-code">[rhcm_memberships]</code>
+                    <span>All memberships, full card layout</span>
+                </div>
+                <div class="rhcm-help-example">
+                    <code class="rhcm-copy-code">[rhcm_memberships category="sailing" layout="tiles"]</code>
+                    <span>Sailing memberships as compact price tiles</span>
+                </div>
+                <div class="rhcm-help-example">
+                    <code class="rhcm-copy-code">[rhcm_memberships layout="tiles"]</code>
+                    <span>All memberships as price tiles</span>
+                </div>
+            </div>
+        </div>
+
+        </div><!-- #rhcm-tab-memberships -->
+
         </div><!-- .wrap -->
 
         <style>
+        .rhcm-help-tab-nav { border-bottom: 1px solid #c3c4c7; margin-bottom: 0; }
+        .rhcm-help-tab-nav .nav-tab { margin-bottom: -1px; }
         .rhcm-help-card {
             background: #fff;
             border-radius: 8px;
@@ -1575,19 +1641,33 @@ class RHCM_Admin {
         }
         </style>
         <script>
-        document.querySelectorAll('.rhcm-copy-code').forEach(function(el) {
-            el.addEventListener('click', function() {
-                navigator.clipboard.writeText(el.textContent.trim()).then(function() {
-                    el.classList.add('rhcm-copied');
-                    var orig = el.textContent;
-                    el.textContent = 'Copied!';
-                    setTimeout(function() {
-                        el.textContent = orig;
-                        el.classList.remove('rhcm-copied');
-                    }, 1800);
+        (function() {
+            var tabs = document.querySelectorAll('.rhcm-help-tab-nav .nav-tab');
+            tabs.forEach(function(tab) {
+                tab.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    tabs.forEach(function(t) { t.classList.remove('nav-tab-active'); });
+                    tab.classList.add('nav-tab-active');
+                    var target = tab.getAttribute('data-rhcm-tab');
+                    document.querySelectorAll('.rhcm-tab-content').forEach(function(panel) {
+                        panel.style.display = panel.id === target ? '' : 'none';
+                    });
                 });
             });
-        });
+            document.querySelectorAll('.rhcm-copy-code').forEach(function(el) {
+                el.addEventListener('click', function() {
+                    navigator.clipboard.writeText(el.textContent.trim()).then(function() {
+                        el.classList.add('rhcm-copied');
+                        var orig = el.textContent;
+                        el.textContent = 'Copied!';
+                        setTimeout(function() {
+                            el.textContent = orig;
+                            el.classList.remove('rhcm-copied');
+                        }, 1800);
+                    });
+                });
+            });
+        })();
         </script>
         <?php
     }

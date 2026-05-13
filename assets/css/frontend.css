@@ -572,6 +572,7 @@
 }
 .rhcm-mem-featured .rhcm-mem-price-header {
     background: linear-gradient(135deg, var(--rhcm-navy) 0%, #1a3a5c 100%);
+    padding-right: 116px;
 }
 
 /* Most Popular badge */
@@ -696,6 +697,87 @@
     color: var(--rhcm-navy);
 }
 .rhcm-mem-featured .rhcm-mem-btn:hover { opacity: .88; color: var(--rhcm-navy); }
+
+/* ── Membership tiles layout=[tiles] ─────────────────────────── */
+.rhcm-mem-tile-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 20px;
+}
+
+.rhcm-mem-tile {
+    border-radius: 14px;
+    overflow: hidden;
+    background: #fff;
+    border: 1.5px solid var(--rhcm-light);
+    display: flex;
+    flex-direction: column;
+    transition: transform .2s, box-shadow .2s;
+    box-shadow: 0 2px 8px rgba(0,0,0,.06);
+}
+.rhcm-mem-tile:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(0,0,0,.13);
+}
+
+.rhcm-mem-tile-header {
+    background: var(--rhcm-navy);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 36px 20px 32px;
+    text-align: center;
+    min-height: 130px;
+}
+
+.rhcm-mem-tile-price-wrap {
+    display: flex;
+    align-items: baseline;
+    gap: 2px;
+    line-height: 1;
+}
+
+.rhcm-mem-tile-price {
+    font-size: 2.8rem;
+    font-weight: 800;
+    color: var(--rhcm-gold);
+    letter-spacing: -.02em;
+    line-height: 1;
+}
+
+.rhcm-mem-tile-freq {
+    font-size: .9rem;
+    color: rgba(255,255,255,.65);
+    font-weight: 500;
+    margin-left: 1px;
+}
+
+.rhcm-mem-tile-body {
+    padding: 20px 22px 24px;
+    flex: 1;
+}
+
+.rhcm-mem-tile-name {
+    font-weight: 700;
+    color: var(--rhcm-navy);
+    font-size: 1rem;
+    margin: 0 0 8px;
+    line-height: 1.3;
+}
+
+.rhcm-mem-tile-desc {
+    color: var(--rhcm-muted);
+    font-size: .86rem;
+    line-height: 1.55;
+    margin: 0;
+}
+
+@media (max-width: 600px) {
+    .rhcm-mem-tile-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 380px) {
+    .rhcm-mem-tile-grid { grid-template-columns: 1fr; }
+}
 
 /* ── Course card overview [rhcm_course_card] ──────────────────── */
 .rhcm-course-card-overview {
