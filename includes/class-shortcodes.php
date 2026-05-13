@@ -8,8 +8,9 @@ class RHCM_Shortcodes {
         add_shortcode( 'rhcm_course',       [ $this, 'render_course' ] );
         add_shortcode( 'rhcm_course_card',  [ $this, 'render_course_card' ] );
         add_shortcode( 'rhcm_courses',      [ $this, 'render_courses' ] );
-        add_shortcode( 'rhcm_tag',          [ $this, 'render_tag' ] );
+        add_shortcode( 'rhcm_tag',            [ $this, 'render_tag' ] );
         add_shortcode( 'rhcm_memberships',  [ $this, 'render_memberships' ] );
+        add_shortcode( 'rhcm_mem_categories', [ $this, 'render_mem_cat_sc' ] );
         add_shortcode( 'rhcm_session',      [ $this, 'render_session_detail' ] );
         add_action( 'wp_enqueue_scripts', [ $this, 'enqueue' ] );
         add_action( 'init',              [ $this, 'handle_booking_post' ] );
@@ -20,7 +21,7 @@ class RHCM_Shortcodes {
     public function enqueue() {
         global $post;
         if ( ! $post ) return;
-        $shortcodes = [ 'rhcm_schedule', 'rhcm_course', 'rhcm_course_card', 'rhcm_courses', 'rhcm_tag', 'rhcm_memberships', 'rhcm_session' ];
+        $shortcodes = [ 'rhcm_schedule', 'rhcm_course', 'rhcm_course_card', 'rhcm_courses', 'rhcm_tag', 'rhcm_memberships', 'rhcm_mem_categories', 'rhcm_session' ];
         $needs_assets = false;
         foreach ( $shortcodes as $sc ) {
             if ( has_shortcode( $post->post_content, $sc ) ) { $needs_assets = true; break; }
@@ -608,6 +609,36 @@ class RHCM_Shortcodes {
         $color = $colors[ $cat ] ?? '#0a2342';
 
         return '<span class="rhcm-cat-tag" style="background:' . esc_attr( $color ) . '">' . esc_html( $label ) . '</span>';
+    }
+
+    // ── [rhcm_mem_categories] ─────────────────────────────────────────────────
+
+    public function render_mem_cat_sc( array $atts ) {
+        $cats = RHCM_DB::get_mem_categories();
+        if ( empty( $cats ) ) return '<p>No membership categories available yet.</p>';
+
+        $active = array_filter( $cats, fn( $c ) => (int) ( $c['is_active'] ?? 1 ) !== 0 );
+        uasort( $active, fn( $a, $b ) => (int) ( $a['sort_order'] ?? 0 ) <=> (int) ( $b['sort_order'] ?? 0 ) );
+
+        if ( empty( $active ) ) return '<p>No membership categories available yet.</p>';
+
+        ob_start();
+        echo '<div class="rhcm-mem-grid">';
+        foreach ( $active as $key => $cat ) {
+            // Normalise category data into the same shape render_mem_card() expects
+            echo $this->render_mem_card( [
+                'name'       => $cat['label']      ?? $key,
+                'icon'       => $cat['icon']        ?? '',
+                'tagline'    => $cat['tagline']     ?? '',
+                'price'      => $cat['price']       ?? '',
+                'frequency'  => $cat['frequency']   ?? '',
+                'details'    => $cat['details']     ?? '',
+                'is_popular' => $cat['is_popular']  ?? 0,
+                'info_url'   => $cat['info_url']    ?? '',
+            ] );
+        }
+        echo '</div>';
+        return ob_get_clean();
     }
 
     // ── [rhcm_memberships category=""] ────────────────────────────────────────
