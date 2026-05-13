@@ -22,6 +22,7 @@ class RHCM_Admin {
         add_action( 'admin_post_rhcm_save_bolt_on',          [ $this, 'handle_save_bolt_on' ] );
         add_action( 'admin_post_rhcm_delete_bolt_on',        [ $this, 'handle_delete_bolt_on' ] );
         add_action( 'admin_post_rhcm_update_application_status', [ $this, 'handle_application_status' ] );
+        add_action( 'admin_post_rhcm_save_paysuite',             [ $this, 'handle_save_paysuite' ] );
     }
 
     public function register_menus() {
@@ -1344,6 +1345,7 @@ class RHCM_Admin {
         <nav class="nav-tab-wrapper rhcm-help-tab-nav" style="margin-bottom:24px">
             <a href="#" class="nav-tab nav-tab-active" data-rhcm-tab="rhcm-tab-courses">Course Shortcodes</a>
             <a href="#" class="nav-tab" data-rhcm-tab="rhcm-tab-memberships">Membership Shortcodes</a>
+            <a href="#" class="nav-tab" data-rhcm-tab="rhcm-tab-paysuite">Paysuite</a>
         </nav>
 
         <!-- ── Course Shortcodes tab ── -->
@@ -1718,6 +1720,82 @@ class RHCM_Admin {
 
         </div><!-- #rhcm-tab-memberships -->
 
+        <!-- ── Paysuite tab ── -->
+        <?php
+        $ps_notice = $_GET['ps_notice'] ?? '';
+        $ps_enabled     = get_option( 'rhcm_paysuite_enabled', 0 );
+        $ps_client_code = get_option( 'rhcm_paysuite_client_code', '' );
+        $ps_api_key     = get_option( 'rhcm_paysuite_api_key', '' );
+        $ps_sandbox     = get_option( 'rhcm_paysuite_sandbox', 0 );
+        ?>
+        <div id="rhcm-tab-paysuite" class="rhcm-tab-content" style="display:none">
+        <?php if ( $ps_notice === 'saved' ): ?><div class="notice notice-success is-dismissible" style="margin-bottom:16px"><p>Paysuite settings saved.</p></div><?php endif; ?>
+
+        <div class="rhcm-help-card" style="max-width:700px">
+            <div class="rhcm-help-card-header">
+                <span class="rhcm-sc-code" style="font-size:.95rem">Access Paysuite DD</span>
+                <span class="rhcm-help-badge">Direct Debit</span>
+                <?php if ( RHCM_Paysuite::is_enabled() ): ?>
+                <span style="background:#166534;color:#fff;border-radius:20px;padding:3px 12px;font-size:.75rem;font-weight:700">&#10003; Connected</span>
+                <?php else: ?>
+                <span style="background:#991b1b;color:#fff;border-radius:20px;padding:3px 12px;font-size:.75rem;font-weight:700">&#9711; Disabled</span>
+                <?php endif; ?>
+            </div>
+            <div style="padding:18px 22px 4px;color:#374151;font-size:.9rem;line-height:1.6">
+                <p style="margin:0 0 6px">When enabled, the <code>[rhcm_membership_join]</code> shortcode adds a fourth step where members enter their address and bank account details to set up a monthly Direct Debit via <strong>Access Paysuite DDCMS v3</strong>.</p>
+                <p style="margin:0;color:#6b7280;font-size:.84rem">Annual price on the membership is divided by 12 and collected on the 21st of each month. Leave credentials empty to disable.</p>
+            </div>
+
+            <form method="POST" action="<?= esc_url( admin_url('admin-post.php') ) ?>" style="padding:18px 22px 22px">
+                <?php wp_nonce_field( 'rhcm_save_paysuite', 'rhcm_nonce' ); ?>
+                <input type="hidden" name="action" value="rhcm_save_paysuite">
+
+                <table class="form-table" style="margin:0">
+                    <tr>
+                        <th style="width:200px;padding:12px 0 12px"><label>Enable Paysuite DD</label></th>
+                        <td style="padding:12px 0">
+                            <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+                                <input type="checkbox" name="rhcm_paysuite_enabled" value="1" <?= checked( $ps_enabled, 1, false ) ?> style="accent-color:#0a2342;width:17px;height:17px">
+                                <span style="font-size:.9rem;color:#374151">Add Direct Debit step to the membership join flow</span>
+                            </label>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th style="padding:12px 0 12px"><label for="ps-client-code">Client Code</label></th>
+                        <td style="padding:12px 0">
+                            <input type="text" id="ps-client-code" name="rhcm_paysuite_client_code"
+                                   value="<?= esc_attr( $ps_client_code ) ?>"
+                                   placeholder="e.g. APISEZ" style="width:280px"
+                                   class="regular-text">
+                        </td>
+                    </tr>
+                    <tr>
+                        <th style="padding:12px 0 12px"><label for="ps-api-key">API Key</label></th>
+                        <td style="padding:12px 0">
+                            <input type="password" id="ps-api-key" name="rhcm_paysuite_api_key"
+                                   value="<?= esc_attr( $ps_api_key ) ?>"
+                                   placeholder="Your Access Paysuite API key" style="width:360px"
+                                   class="regular-text" autocomplete="new-password">
+                            <p class="description" style="margin-top:6px">Stored in WordPress options. Keep private.</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th style="padding:12px 0 12px"><label>Sandbox Mode</label></th>
+                        <td style="padding:12px 0">
+                            <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+                                <input type="checkbox" name="rhcm_paysuite_sandbox" value="1" <?= checked( $ps_sandbox, 1, false ) ?> style="accent-color:#0a2342;width:17px;height:17px">
+                                <span style="font-size:.9rem;color:#374151">Use playpen (sandbox) endpoint — enable for testing</span>
+                            </label>
+                        </td>
+                    </tr>
+                </table>
+
+                <p style="margin-top:18px"><button type="submit" class="button button-primary">Save Paysuite Settings</button></p>
+            </form>
+        </div>
+
+        </div><!-- #rhcm-tab-paysuite -->
+
         </div><!-- .wrap -->
 
         <style>
@@ -2012,7 +2090,7 @@ class RHCM_Admin {
         <?php if ( $notice === 'updated' ): ?><div class="notice notice-success is-dismissible"><p>Status updated.</p></div><?php endif; ?>
 
         <table class="wp-list-table widefat fixed striped rhcm-table">
-            <thead><tr><th>Ref</th><th>Name</th><th>Email</th><th>Category</th><th>Bolt-ons</th><th>Status</th><th>Submitted</th><th>Actions</th></tr></thead>
+            <thead><tr><th>Ref</th><th>Name</th><th>Email</th><th>Category</th><th>Bolt-ons</th><th>DD</th><th>Status</th><th>Submitted</th><th>Actions</th></tr></thead>
             <tbody>
             <?php foreach ( $apps as $a ):
                 $bolt_ids = array_filter( array_map( 'intval', explode( ',', $a['bolt_on_ids'] ?? '' ) ) );
@@ -2029,6 +2107,13 @@ class RHCM_Admin {
                 <td><a href="mailto:<?= esc_attr( $a['email'] ) ?>"><?= esc_html( $a['email'] ) ?></a></td>
                 <td><?= esc_html( $a['category_name'] ?: $a['category_key'] ) ?></td>
                 <td style="font-size:.82rem;color:#6b7280"><?= $bolt_names ? esc_html( $bolt_names ) : '&mdash;' ?></td>
+                <td><?php
+                    $dds = $a['dd_status'] ?? '';
+                    if ( $dds === 'active' )   echo '<span style="color:#166534;font-weight:600;font-size:.78rem">&#10003; Active</span>';
+                    elseif ( $dds === 'pending' ) echo '<span style="color:#b45309;font-weight:600;font-size:.78rem">&#9679; Pending</span>';
+                    elseif ( $dds === 'error' )   echo '<span style="color:#991b1b;font-weight:600;font-size:.78rem">&#9888; Error</span>';
+                    else echo '<span style="color:#9ca3af;font-size:.78rem">&mdash;</span>';
+                ?></td>
                 <td><span style="color:<?= esc_attr( $sc ) ?>;font-weight:600;font-size:.82rem"><?= esc_html( $status_labels[ $a['status'] ] ?? ucfirst( $a['status'] ) ) ?></span></td>
                 <td><?= esc_html( date( 'j M Y H:i', strtotime( $a['created_at'] ) ) ) ?></td>
                 <td>
@@ -2047,12 +2132,23 @@ class RHCM_Admin {
             </tr>
             <?php endforeach; ?>
             <?php if ( empty( $apps ) ): ?>
-            <tr><td colspan="8">No applications yet.</td></tr>
+            <tr><td colspan="9">No applications yet.</td></tr>
             <?php endif; ?>
             </tbody>
         </table>
         </div>
         <?php
+    }
+
+    public function handle_save_paysuite() {
+        check_admin_referer( 'rhcm_save_paysuite', 'rhcm_nonce' );
+        if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Unauthorised' );
+        update_option( 'rhcm_paysuite_enabled',     isset( $_POST['rhcm_paysuite_enabled'] ) ? 1 : 0 );
+        update_option( 'rhcm_paysuite_client_code', sanitize_text_field( $_POST['rhcm_paysuite_client_code'] ?? '' ) );
+        update_option( 'rhcm_paysuite_api_key',     sanitize_text_field( $_POST['rhcm_paysuite_api_key']     ?? '' ) );
+        update_option( 'rhcm_paysuite_sandbox',     isset( $_POST['rhcm_paysuite_sandbox'] ) ? 1 : 0 );
+        wp_redirect( admin_url( 'admin.php?page=rhcm-settings&ps_notice=saved#rhcm-tab-paysuite' ) );
+        exit;
     }
 
     public function handle_application_status() {

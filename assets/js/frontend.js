@@ -500,7 +500,7 @@
         var join = document.getElementById('rhcm-join');
         if (!join) return;
 
-        var state = { step: 1, catKey: '', catName: '', catPrice: '', boltOns: [] };
+        var state = { step: 1, catKey: '', catName: '', catPrice: '', catAnnual: 0, boltOns: [] };
 
         function goToStep(n) {
             state.step = n;
@@ -523,6 +523,7 @@
             });
 
             if (n === 3) buildSummary();
+            if (n === 4) updateMonthlyAmount();
         }
 
         function buildSummary() {
@@ -567,9 +568,10 @@
                     c.classList.remove('rhcm-join-selected');
                 });
                 card.classList.add('rhcm-join-selected');
-                state.catKey   = card.getAttribute('data-key');
-                state.catName  = card.getAttribute('data-name');
-                state.catPrice = card.getAttribute('data-price');
+                state.catKey    = card.getAttribute('data-key');
+                state.catName   = card.getAttribute('data-name');
+                state.catPrice  = card.getAttribute('data-price');
+                state.catAnnual = parseFloat(card.getAttribute('data-annual') || '0');
                 var btn = document.getElementById('rhcm-join-next-1');
                 if (btn) btn.disabled = false;
                 return;
@@ -611,6 +613,27 @@
                 goToStep(to);
             }
         });
+
+        function updateMonthlyAmount() {
+            var el = document.getElementById('rhcm-join-monthly-amount');
+            if (!el) return;
+            if (state.catAnnual > 0) {
+                el.textContent = '£' + (state.catAnnual / 12).toFixed(2) + '/month';
+            } else {
+                el.textContent = 'To be confirmed';
+            }
+        }
+
+        // Sort code auto-format: 123456 → 12-34-56
+        var scInput = document.getElementById('rhcm-join-sort-code');
+        if (scInput) {
+            scInput.addEventListener('input', function () {
+                var v = this.value.replace(/\D/g, '').slice(0, 6);
+                if (v.length > 4) v = v.slice(0, 2) + '-' + v.slice(2, 4) + '-' + v.slice(4);
+                else if (v.length > 2) v = v.slice(0, 2) + '-' + v.slice(2);
+                this.value = v;
+            });
+        }
 
         // Init step 1
         goToStep(1);

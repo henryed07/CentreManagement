@@ -120,6 +120,12 @@ ref VARCHAR(20) NOT NULL,
 category_key VARCHAR(80) NOT NULL DEFAULT '',
 category_name VARCHAR(200) NOT NULL DEFAULT '',
 bolt_on_ids TEXT,
+address_line1 VARCHAR(200) NOT NULL DEFAULT '',
+address_line2 VARCHAR(200) NOT NULL DEFAULT '',
+postcode VARCHAR(20) NOT NULL DEFAULT '',
+paysuite_ref VARCHAR(50) NOT NULL DEFAULT '',
+paysuite_id VARCHAR(100) NOT NULL DEFAULT '',
+dd_status VARCHAR(20) NOT NULL DEFAULT '',
 first_name VARCHAR(100) NOT NULL,
 last_name VARCHAR(100) NOT NULL,
 email VARCHAR(200) NOT NULL,
@@ -599,6 +605,12 @@ KEY email (email)
             'category_key'  => sanitize_text_field( $data['category_key']  ?? '' ),
             'category_name' => sanitize_text_field( $data['category_name'] ?? '' ),
             'bolt_on_ids'   => sanitize_text_field( $data['bolt_on_ids']   ?? '' ),
+            'address_line1' => sanitize_text_field( $data['address_line1'] ?? '' ),
+            'address_line2' => sanitize_text_field( $data['address_line2'] ?? '' ),
+            'postcode'      => sanitize_text_field( $data['postcode']      ?? '' ),
+            'paysuite_ref'  => sanitize_text_field( $data['paysuite_ref']  ?? '' ),
+            'paysuite_id'   => sanitize_text_field( $data['paysuite_id']   ?? '' ),
+            'dd_status'     => sanitize_text_field( $data['dd_status']     ?? '' ),
             'first_name'    => sanitize_text_field( $data['first_name']    ?? '' ),
             'last_name'     => sanitize_text_field( $data['last_name']     ?? '' ),
             'email'         => sanitize_email( $data['email'] ?? '' ),
@@ -606,7 +618,20 @@ KEY email (email)
             'notes'         => sanitize_textarea_field( $data['notes']     ?? '' ),
             'status'        => 'pending',
         ] );
-        return $ref;
+        return [ 'ref' => $ref, 'id' => (int) $wpdb->insert_id ];
+    }
+
+    public static function update_application_dd( int $id, string $paysuite_ref, string $paysuite_id, string $dd_status ) {
+        global $wpdb;
+        $wpdb->update(
+            $wpdb->prefix . 'rhcm_applications',
+            [
+                'paysuite_ref' => $paysuite_ref,
+                'paysuite_id'  => $paysuite_id,
+                'dd_status'    => $dd_status,
+            ],
+            [ 'id' => $id ]
+        );
     }
 
     public static function update_application_status( int $id, string $status ) {

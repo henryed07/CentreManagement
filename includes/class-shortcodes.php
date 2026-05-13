@@ -921,7 +921,35 @@ class RHCM_Shortcodes {
             $bolt_ids = array_map( 'intval', $_POST['bolt_ons'] );
         }
 
-        $ref = RHCM_DB::create_application( [
+        // Validate Direct Debit fields when Paysuite is enabled
+        $dd_enabled = RHCM_Paysuite::is_enabled();
+        $dd_fields  = [];
+        if ( $dd_enabled ) {
+            $dd_fields = [
+                'title'          => sanitize_text_field( $_POST['title']          ?? '' ),
+                'address_line1'  => sanitize_text_field( $_POST['address_line1']  ?? '' ),
+                'address_line2'  => sanitize_text_field( $_POST['address_line2']  ?? '' ),
+                'postcode'       => strtoupper( sanitize_text_field( $_POST['postcode'] ?? '' ) ),
+                'account_holder' => sanitize_text_field( $_POST['account_holder'] ?? '' ),
+                'sort_code'      => preg_replace( '/\D/', '', $_POST['sort_code']      ?? '' ),
+                'account_number' => preg_replace( '/\D/', '', $_POST['account_number'] ?? '' ),
+                'dd_confirm'     => isset( $_POST['dd_confirm'] ),
+            ];
+            if (
+                ! $dd_fields['address_line1'] ||
+                ! $dd_fields['postcode'] ||
+                ! $dd_fields['account_holder'] ||
+                strlen( $dd_fields['sort_code'] )      !== 6 ||
+                strlen( $dd_fields['account_number'] ) !== 8 ||
+                ! $dd_fields['dd_confirm']
+            ) {
+                wp_safe_redirect( add_query_arg( [ 'rhcm_join_error' => 'dd_validation' ], wp_get_referer() ) );
+                exit;
+            }
+        }
+
+        // Create application record
+        $result = RHCM_DB::create_application( [
             'category_key'  => $cat,
             'category_name' => $cat_name,
             'bolt_on_ids'   => implode( ',', $bolt_ids ),
@@ -930,7 +958,45 @@ class RHCM_Shortcodes {
             'email'         => $email,
             'phone'         => sanitize_text_field( $_POST['phone'] ?? '' ),
             'notes'         => sanitize_textarea_field( $_POST['notes'] ?? '' ),
+            'address_line1' => $dd_fields['address_line1'] ?? '',
+            'address_line2' => $dd_fields['address_line2'] ?? '',
+            'postcode'      => $dd_fields['postcode']      ?? '',
         ] );
+        $ref    = $result['ref'];
+        $app_id = $result['id'];
+
+        // Set up Direct Debit via Paysuite
+        $dd_note = '';
+        if ( $dd_enabled ) {
+            try {
+                $paysuite        = new RHCM_Paysuite();
+                $customer_resp   = $paysuite->createCustomer(
+                    RHCM_Paysuite::buildCustomerPayload( $app_id, array_merge( $dd_fields, [
+                        'first_name' => $first,
+                        'last_name'  => $last,
+                        'email'      => $email,
+                    ] ) )
+                );
+                $paysuite_ref = $customer_resp['CustomerRef'] ?? RHCM_Paysuite::makeCustomerRef( $app_id );
+                $paysuite_id  = $customer_resp['Id'] ?? '';
+
+                $annual_price = RHCM_Paysuite::parsePrice( $membership['price'] ?? '' );
+                if ( $annual_price > 0 && $paysuite_id ) {
+                    $paysuite->createContract(
+                        $paysuite_id,
+                        RHCM_Paysuite::buildContractPayload( $cat_name, $annual_price )
+                    );
+                    RHCM_DB::update_application_dd( $app_id, $paysuite_ref, $paysuite_id, 'active' );
+                    $dd_note = "\nDirect Debit: set up successfully (£" . number_format( round( $annual_price / 12, 2 ), 2 ) . '/month)';
+                } else {
+                    RHCM_DB::update_application_dd( $app_id, $paysuite_ref, $paysuite_id, 'pending' );
+                    $dd_note = "\nDirect Debit: customer created; contract needs manual setup (price POA)";
+                }
+            } catch ( \Throwable $e ) {
+                RHCM_DB::update_application_dd( $app_id, '', '', 'error' );
+                $dd_note = "\nDirect Debit: FAILED — " . $e->getMessage();
+            }
+        }
 
         // Notify admin
         $bolt_on_names = '';
@@ -944,12 +1010,12 @@ class RHCM_Shortcodes {
         wp_mail(
             get_option( 'admin_email' ),
             'New Membership Application — ' . $ref,
-            "Ref: $ref\nName: $first $last\nEmail: $email\nCategory: $cat_name\nBolt-ons: " . ( $bolt_on_names ?: 'None' )
+            "Ref: $ref\nName: $first $last\nEmail: $email\nCategory: $cat_name\nBolt-ons: " . ( $bolt_on_names ?: 'None' ) . $dd_note
         );
         wp_mail(
             $email,
-            'Membership Application Received — ' . get_bloginfo('name'),
-            "Hi $first,\n\nThank you for your membership application!\n\nRef: $ref\nMembership: $cat_name" . ( $bolt_on_names ? "\nBolt-ons: $bolt_on_names" : '' ) . "\n\nWe'll be in touch shortly.\n\n" . get_bloginfo('name')
+            'Membership Application Received — ' . get_bloginfo( 'name' ),
+            "Hi $first,\n\nThank you for your membership application!\n\nRef: $ref\nMembership: $cat_name" . ( $bolt_on_names ? "\nBolt-ons: $bolt_on_names" : '' ) . "\n\nWe'll be in touch shortly.\n\n" . get_bloginfo( 'name' )
         );
 
         wp_safe_redirect( add_query_arg( [ 'rhcm_join_done' => 1, 'ref' => $ref ], get_permalink() ) );
@@ -985,8 +1051,13 @@ class RHCM_Shortcodes {
         }
 
         if ( ! empty( $_GET['rhcm_join_error'] ) ) {
-            echo '<div class="rhcm-notice rhcm-notice-error">Please complete all required fields and try again.</div>';
+            $err_msg = ( $_GET['rhcm_join_error'] === 'dd_validation' )
+                ? 'Please complete all Direct Debit fields and confirm the instruction before submitting.'
+                : 'Please complete all required fields and try again.';
+            echo '<div class="rhcm-notice rhcm-notice-error">' . esc_html( $err_msg ) . '</div>';
         }
+
+        $dd_enabled = RHCM_Paysuite::is_enabled();
         ?>
         <div class="rhcm-join" id="rhcm-join">
 
@@ -1004,8 +1075,15 @@ class RHCM_Shortcodes {
                 <div class="rhcm-join-connector"></div>
                 <div class="rhcm-join-step" data-step="3">
                     <div class="rhcm-join-step-circle">3</div>
-                    <div class="rhcm-join-step-label">Review</div>
+                    <div class="rhcm-join-step-label">Your Details</div>
                 </div>
+                <?php if ( $dd_enabled ): ?>
+                <div class="rhcm-join-connector"></div>
+                <div class="rhcm-join-step" data-step="4">
+                    <div class="rhcm-join-step-circle">4</div>
+                    <div class="rhcm-join-step-label">Direct Debit</div>
+                </div>
+                <?php endif; ?>
             </div>
 
             <!-- Step 1: Choose Membership -->
@@ -1019,7 +1097,7 @@ class RHCM_Shortcodes {
                     $m_price = trim( $m['price'] ?? '' );
                     $m_freq  = trim( $m['frequency'] ?? '' );
                 ?>
-                    <div class="rhcm-join-option-card" data-key="<?= (int) $m['id'] ?>" data-name="<?= esc_attr( $m['name'] ) ?>" data-price="<?= esc_attr( $m_price ) ?>">
+                    <div class="rhcm-join-option-card" data-key="<?= (int) $m['id'] ?>" data-name="<?= esc_attr( $m['name'] ) ?>" data-price="<?= esc_attr( $m_price ) ?>" data-annual="<?= esc_attr( RHCM_Paysuite::parsePrice( $m_price ) ) ?>">
                         <div class="rhcm-join-option-header">
                             <span class="rhcm-join-option-name"><?= esc_html( $m['name'] ) ?></span>
                             <span class="rhcm-join-option-price"><?= esc_html( $m_price ?: 'POA' ) ?><?php if ( $m_freq ): ?><small><?= esc_html( $m_freq ) ?></small><?php endif; ?></span>
@@ -1075,10 +1153,18 @@ class RHCM_Shortcodes {
                 </div>
             </div>
 
-            <!-- Step 3: Review + Details -->
+            <!-- Step 3: Your Details (+ step 4 DD when enabled, wrapped in one form) -->
+            <?php if ( $dd_enabled ): ?>
+            <form id="rhcm-join-form" method="POST" action="<?= esc_url( $page_url ) ?>">
+                <?php wp_nonce_field( 'rhcm_membership_join', 'rhcm_join_nonce' ); ?>
+                <input type="hidden" name="rhcm_join_submit" value="1">
+                <input type="hidden" name="category_key" id="rhcm-join-field-cat" value="">
+                <div id="rhcm-join-bolt-inputs"></div>
+            <?php endif; ?>
+
             <div class="rhcm-join-panel" id="rhcm-join-panel-3" style="display:none">
-                <h2 class="rhcm-join-heading">Review &amp; Submit</h2>
-                <p class="rhcm-join-subheading">Check your selection and fill in your details to complete the application.</p>
+                <h2 class="rhcm-join-heading"><?= $dd_enabled ? 'Your Details' : 'Review &amp; Submit' ?></h2>
+                <p class="rhcm-join-subheading">Check your selection and fill in your details.</p>
 
                 <!-- Summary -->
                 <div class="rhcm-join-summary">
@@ -1093,11 +1179,13 @@ class RHCM_Shortcodes {
                     <div id="rhcm-join-summary-bolt-rows"></div>
                 </div>
 
+                <?php if ( ! $dd_enabled ): ?>
                 <form id="rhcm-join-form" method="POST" action="<?= esc_url( $page_url ) ?>">
                     <?php wp_nonce_field( 'rhcm_membership_join', 'rhcm_join_nonce' ); ?>
                     <input type="hidden" name="rhcm_join_submit" value="1">
                     <input type="hidden" name="category_key" id="rhcm-join-field-cat" value="">
                     <div id="rhcm-join-bolt-inputs"></div>
+                <?php endif; ?>
 
                     <h4 class="rhcm-section-title">Your Details</h4>
 
@@ -1128,10 +1216,88 @@ class RHCM_Shortcodes {
 
                     <div class="rhcm-join-nav">
                         <button type="button" class="rhcm-btn rhcm-btn-outline rhcm-join-back" data-to="2">&larr; Back</button>
+                        <?php if ( $dd_enabled ): ?>
+                        <button type="button" class="rhcm-btn rhcm-btn-primary rhcm-join-continue">Continue &rarr;</button>
+                        <?php else: ?>
                         <button type="submit" class="rhcm-btn rhcm-btn-primary">Submit Application &rarr;</button>
+                        <?php endif; ?>
                     </div>
+
+                <?php if ( ! $dd_enabled ): ?>
                 </form>
-            </div>
+                <?php endif; ?>
+            </div><!-- #rhcm-join-panel-3 -->
+
+            <?php if ( $dd_enabled ): ?>
+            <!-- Step 4: Direct Debit -->
+            <div class="rhcm-join-panel" id="rhcm-join-panel-4" style="display:none">
+                <h2 class="rhcm-join-heading">Set Up Direct Debit</h2>
+                <p class="rhcm-join-subheading">Your membership is paid by monthly Direct Debit via Access Paysuite. First payment on the 21st of the month.</p>
+
+                <div class="rhcm-join-dd-monthly" id="rhcm-join-dd-monthly" style="background:#f0f7ff;border:1px solid #b8d8f8;border-radius:8px;padding:12px 16px;margin-bottom:20px;font-size:.88rem;color:#1a3a6a">
+                    Monthly amount: <strong id="rhcm-join-monthly-amount">&mdash;</strong>
+                    <span style="color:#6b7280;font-size:.8rem">&nbsp;&bull;&nbsp;collected on the 21st each month</span>
+                </div>
+
+                <h4 class="rhcm-section-title">Home Address</h4>
+                <div class="rhcm-field">
+                    <label for="rhcm-join-addr1">Address Line 1 *</label>
+                    <input type="text" id="rhcm-join-addr1" name="address_line1" required autocomplete="address-line1" placeholder="123 High Street">
+                </div>
+                <div class="rhcm-field">
+                    <label for="rhcm-join-addr2">Address Line 2 <span class="rhcm-label-hint">(optional)</span></label>
+                    <input type="text" id="rhcm-join-addr2" name="address_line2" autocomplete="address-line2">
+                </div>
+                <div class="rhcm-field" style="max-width:180px">
+                    <label for="rhcm-join-postcode">Postcode *</label>
+                    <input type="text" id="rhcm-join-postcode" name="postcode" required autocomplete="postal-code" placeholder="TW19 5BW" style="text-transform:uppercase">
+                </div>
+
+                <h4 class="rhcm-section-title">Bank Account Details</h4>
+                <p style="color:#6b7280;font-size:.84rem;margin:0 0 14px">Your bank details are transmitted securely to Access Paysuite and are never stored on our servers.</p>
+                <div class="rhcm-field">
+                    <label for="rhcm-join-account-holder">Account Holder Name *</label>
+                    <input type="text" id="rhcm-join-account-holder" name="account_holder" required autocomplete="name" placeholder="As it appears on your bank statement">
+                </div>
+                <div class="rhcm-form-row">
+                    <div class="rhcm-field">
+                        <label for="rhcm-join-sort-code">Sort Code *</label>
+                        <input type="text" id="rhcm-join-sort-code" name="sort_code" required placeholder="12-34-56" maxlength="8" inputmode="numeric">
+                    </div>
+                    <div class="rhcm-field">
+                        <label for="rhcm-join-account-number">Account Number *</label>
+                        <input type="text" id="rhcm-join-account-number" name="account_number" required placeholder="12345678" maxlength="8" inputmode="numeric">
+                    </div>
+                </div>
+
+                <h4 class="rhcm-section-title">Direct Debit Guarantee</h4>
+                <div style="background:#f0f7ff;border:1px solid #b8d8f8;border-radius:8px;padding:14px 18px;font-size:.82rem;color:#1a3a6a;line-height:1.65;margin-bottom:16px">
+                    <strong style="display:block;margin-bottom:8px;font-size:.88rem">&#9873; The Direct Debit Guarantee</strong>
+                    <ul style="padding-left:18px;margin:0">
+                        <li>This Guarantee is offered by all banks and building societies that accept instructions to pay Direct Debits.</li>
+                        <li>If there are any changes to the amount, date or frequency of your Direct Debit, Queen Mary Sailing Club will notify you 10 working days in advance.</li>
+                        <li>If an error is made in the payment of your Direct Debit you are entitled to a full and immediate refund from your bank or building society.</li>
+                        <li>You can cancel a Direct Debit at any time by contacting your bank. Please also notify us.</li>
+                    </ul>
+                </div>
+                <div class="rhcm-field">
+                    <label style="display:flex;align-items:flex-start;gap:12px;cursor:pointer;font-weight:400">
+                        <input type="checkbox" name="dd_confirm" value="1" id="rhcm-join-dd-confirm"
+                               style="margin-top:3px;flex-shrink:0;accent-color:#0a2342;width:17px;height:17px">
+                        <span style="font-size:.86rem;color:#374151">
+                            I confirm that I am the account holder and the only person required to authorise debits from this account.
+                            I instruct Queen Mary Sailing Club to set up a Direct Debit on this account and understand I have rights under the Direct Debit Guarantee.
+                        </span>
+                    </label>
+                </div>
+
+                <div class="rhcm-join-nav">
+                    <button type="button" class="rhcm-btn rhcm-btn-outline rhcm-join-back" data-to="3">&larr; Back</button>
+                    <button type="submit" class="rhcm-btn rhcm-btn-primary">&#10003; Set Up Direct Debit &amp; Join</button>
+                </div>
+            </div><!-- #rhcm-join-panel-4 -->
+            </form>
+            <?php endif; ?>
 
         </div><!-- .rhcm-join -->
         <?php
