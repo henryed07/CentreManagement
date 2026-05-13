@@ -101,12 +101,44 @@ PRIMARY KEY  (id),
 UNIQUE KEY code (code)
 ) $c;";
 
+        $bolt_ons = "CREATE TABLE {$wpdb->prefix}rhcm_bolt_ons (
+id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+name VARCHAR(200) NOT NULL,
+description TEXT,
+price VARCHAR(50) NOT NULL DEFAULT '',
+frequency VARCHAR(80) NOT NULL DEFAULT '',
+sort_order INT NOT NULL DEFAULT 0,
+is_active TINYINT(1) NOT NULL DEFAULT 1,
+created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+PRIMARY KEY  (id)
+) $c;";
+
+        $applications = "CREATE TABLE {$wpdb->prefix}rhcm_applications (
+id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+ref VARCHAR(20) NOT NULL,
+category_key VARCHAR(80) NOT NULL DEFAULT '',
+category_name VARCHAR(200) NOT NULL DEFAULT '',
+bolt_on_ids TEXT,
+first_name VARCHAR(100) NOT NULL,
+last_name VARCHAR(100) NOT NULL,
+email VARCHAR(200) NOT NULL,
+phone VARCHAR(30) NOT NULL DEFAULT '',
+notes TEXT,
+status VARCHAR(20) NOT NULL DEFAULT 'pending',
+created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+PRIMARY KEY  (id),
+UNIQUE KEY ref (ref),
+KEY email (email)
+) $c;";
+
         require_once ABSPATH . 'wp-admin/includes/upgrade.php';
         dbDelta( $courses );
         dbDelta( $sessions );
         dbDelta( $bookings );
         dbDelta( $memberships );
         dbDelta( $discounts );
+        dbDelta( $bolt_ons );
+        dbDelta( $applications );
         update_option( 'rhcm_db_version', RHCM_VERSION );
     }
 
@@ -483,6 +515,105 @@ UNIQUE KEY code (code)
             'description' => $d['description'],
             'message'     => 'Discount applied: ' . $d['description'],
         ];
+    }
+
+    // ── Bolt-ons ──────────────────────────────────────────────────────────────
+
+    public static function get_bolt_ons( bool $active_only = false ) {
+        global $wpdb;
+        $where = $active_only ? 'WHERE is_active = 1' : '';
+        return $wpdb->get_results(
+            "SELECT * FROM {$wpdb->prefix}rhcm_bolt_ons $where ORDER BY sort_order ASC, id ASC",
+            ARRAY_A
+        );
+    }
+
+    public static function get_bolt_on( int $id ) {
+        global $wpdb;
+        return $wpdb->get_row(
+            $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}rhcm_bolt_ons WHERE id = %d", $id ),
+            ARRAY_A
+        );
+    }
+
+    public static function save_bolt_on( array $data, int $id = 0 ) {
+        global $wpdb;
+        $t = $wpdb->prefix . 'rhcm_bolt_ons';
+        $row = [
+            'name'        => sanitize_text_field( $data['name']        ?? '' ),
+            'description' => sanitize_textarea_field( $data['description'] ?? '' ),
+            'price'       => sanitize_text_field( $data['price']       ?? '' ),
+            'frequency'   => sanitize_text_field( $data['frequency']   ?? '' ),
+            'sort_order'  => (int) ( $data['sort_order'] ?? 0 ),
+            'is_active'   => isset( $data['is_active'] ) ? 1 : 0,
+        ];
+        if ( $id ) { $wpdb->update( $t, $row, [ 'id' => $id ] ); return $id; }
+        $wpdb->insert( $t, $row );
+        return $wpdb->insert_id;
+    }
+
+    public static function delete_bolt_on( int $id ) {
+        global $wpdb;
+        $wpdb->delete( $wpdb->prefix . 'rhcm_bolt_ons', [ 'id' => $id ] );
+    }
+
+    // ── Applications ──────────────────────────────────────────────────────────
+
+    public static function get_applications( array $args = [] ) {
+        global $wpdb;
+        $where  = 'WHERE 1=1';
+        $params = [];
+        if ( ! empty( $args['status'] ) ) {
+            $where   .= ' AND status = %s';
+            $params[] = $args['status'];
+        }
+        $sql = "SELECT * FROM {$wpdb->prefix}rhcm_applications $where ORDER BY created_at DESC";
+        return $params
+            ? $wpdb->get_results( $wpdb->prepare( $sql, $params ), ARRAY_A )
+            : $wpdb->get_results( $sql, ARRAY_A );
+    }
+
+    public static function get_application( int $id ) {
+        global $wpdb;
+        return $wpdb->get_row(
+            $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}rhcm_applications WHERE id = %d", $id ),
+            ARRAY_A
+        );
+    }
+
+    public static function create_application( array $data ) {
+        global $wpdb;
+        $chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+        do {
+            $ref = 'MA';
+            for ( $i = 0; $i < 6; $i++ ) $ref .= $chars[ random_int( 0, strlen( $chars ) - 1 ) ];
+            $exists = $wpdb->get_var( $wpdb->prepare(
+                "SELECT id FROM {$wpdb->prefix}rhcm_applications WHERE ref = %s", $ref
+            ) );
+        } while ( $exists );
+
+        $wpdb->insert( $wpdb->prefix . 'rhcm_applications', [
+            'ref'           => $ref,
+            'category_key'  => sanitize_text_field( $data['category_key']  ?? '' ),
+            'category_name' => sanitize_text_field( $data['category_name'] ?? '' ),
+            'bolt_on_ids'   => sanitize_text_field( $data['bolt_on_ids']   ?? '' ),
+            'first_name'    => sanitize_text_field( $data['first_name']    ?? '' ),
+            'last_name'     => sanitize_text_field( $data['last_name']     ?? '' ),
+            'email'         => sanitize_email( $data['email'] ?? '' ),
+            'phone'         => sanitize_text_field( $data['phone']         ?? '' ),
+            'notes'         => sanitize_textarea_field( $data['notes']     ?? '' ),
+            'status'        => 'pending',
+        ] );
+        return $ref;
+    }
+
+    public static function update_application_status( int $id, string $status ) {
+        global $wpdb;
+        $wpdb->update(
+            $wpdb->prefix . 'rhcm_applications',
+            [ 'status' => sanitize_text_field( $status ) ],
+            [ 'id' => $id ]
+        );
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

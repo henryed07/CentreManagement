@@ -11,9 +11,11 @@ class RHCM_Shortcodes {
         add_shortcode( 'rhcm_tag',            [ $this, 'render_tag' ] );
         add_shortcode( 'rhcm_memberships',  [ $this, 'render_memberships' ] );
         add_shortcode( 'rhcm_mem_categories', [ $this, 'render_mem_cat_sc' ] );
-        add_shortcode( 'rhcm_session',      [ $this, 'render_session_detail' ] );
+        add_shortcode( 'rhcm_session',        [ $this, 'render_session_detail' ] );
+        add_shortcode( 'rhcm_membership_join', [ $this, 'render_membership_join' ] );
         add_action( 'wp_enqueue_scripts', [ $this, 'enqueue' ] );
         add_action( 'init',              [ $this, 'handle_booking_post' ] );
+        add_action( 'init',              [ $this, 'handle_join_post' ] );
         add_action( 'wp_ajax_rhcm_validate_discount',        [ $this, 'ajax_validate_discount' ] );
         add_action( 'wp_ajax_nopriv_rhcm_validate_discount', [ $this, 'ajax_validate_discount' ] );
     }
@@ -21,7 +23,7 @@ class RHCM_Shortcodes {
     public function enqueue() {
         global $post;
         if ( ! $post ) return;
-        $shortcodes = [ 'rhcm_schedule', 'rhcm_course', 'rhcm_course_card', 'rhcm_courses', 'rhcm_tag', 'rhcm_memberships', 'rhcm_mem_categories', 'rhcm_session' ];
+        $shortcodes = [ 'rhcm_schedule', 'rhcm_course', 'rhcm_course_card', 'rhcm_courses', 'rhcm_tag', 'rhcm_memberships', 'rhcm_mem_categories', 'rhcm_session', 'rhcm_membership_join' ];
         $needs_assets = false;
         foreach ( $shortcodes as $sc ) {
             if ( has_shortcode( $post->post_content, $sc ) ) { $needs_assets = true; break; }
@@ -869,6 +871,245 @@ class RHCM_Shortcodes {
         echo $this->cart_html( $page_url );
         echo $this->checkout_modal_html( $page_url );
 
+        return ob_get_clean();
+    }
+
+    // ── [rhcm_membership_join] ────────────────────────────────────────────────
+
+    public function handle_join_post() {
+        if ( ! isset( $_POST['rhcm_join_submit'] ) ) return;
+        if ( ! wp_verify_nonce( $_POST['rhcm_join_nonce'] ?? '', 'rhcm_membership_join' ) ) {
+            wp_die( 'Security check failed.' );
+        }
+
+        $first = sanitize_text_field( $_POST['first_name'] ?? '' );
+        $last  = sanitize_text_field( $_POST['last_name']  ?? '' );
+        $email = sanitize_email( $_POST['email'] ?? '' );
+        $cat   = sanitize_key( $_POST['category_key'] ?? '' );
+
+        if ( ! $first || ! $last || ! is_email( $email ) || ! $cat ) {
+            wp_safe_redirect( add_query_arg( [ 'rhcm_join_error' => 'validation' ], wp_get_referer() ) );
+            exit;
+        }
+
+        $cats     = RHCM_DB::get_mem_categories();
+        $cat_name = isset( $cats[ $cat ] ) ? ( $cats[ $cat ]['label'] ?? $cat ) : $cat;
+
+        $bolt_ids = [];
+        if ( ! empty( $_POST['bolt_ons'] ) && is_array( $_POST['bolt_ons'] ) ) {
+            $bolt_ids = array_map( 'intval', $_POST['bolt_ons'] );
+        }
+
+        $ref = RHCM_DB::create_application( [
+            'category_key'  => $cat,
+            'category_name' => $cat_name,
+            'bolt_on_ids'   => implode( ',', $bolt_ids ),
+            'first_name'    => $first,
+            'last_name'     => $last,
+            'email'         => $email,
+            'phone'         => sanitize_text_field( $_POST['phone'] ?? '' ),
+            'notes'         => sanitize_textarea_field( $_POST['notes'] ?? '' ),
+        ] );
+
+        // Notify admin
+        $bolt_on_names = '';
+        if ( $bolt_ids ) {
+            $names = array_filter( array_map( function( $bid ) {
+                $b = RHCM_DB::get_bolt_on( $bid );
+                return $b ? $b['name'] : null;
+            }, $bolt_ids ) );
+            $bolt_on_names = implode( ', ', $names );
+        }
+        wp_mail(
+            get_option( 'admin_email' ),
+            'New Membership Application — ' . $ref,
+            "Ref: $ref\nName: $first $last\nEmail: $email\nCategory: $cat_name\nBolt-ons: " . ( $bolt_on_names ?: 'None' )
+        );
+        wp_mail(
+            $email,
+            'Membership Application Received — ' . get_bloginfo('name'),
+            "Hi $first,\n\nThank you for your membership application!\n\nRef: $ref\nMembership: $cat_name" . ( $bolt_on_names ? "\nBolt-ons: $bolt_on_names" : '' ) . "\n\nWe'll be in touch shortly.\n\n" . get_bloginfo('name')
+        );
+
+        wp_safe_redirect( add_query_arg( [ 'rhcm_join_done' => 1, 'ref' => $ref ], get_permalink() ) );
+        exit;
+    }
+
+    public function render_membership_join( array $atts ) {
+        $atts = shortcode_atts( [], $atts );
+
+        $cats     = RHCM_DB::get_mem_categories();
+        $active   = array_filter( $cats, fn( $c ) => (int) ( $c['is_active'] ?? 1 ) !== 0 );
+        uasort( $active, fn( $a, $b ) => (int) ( $a['sort_order'] ?? 0 ) <=> (int) ( $b['sort_order'] ?? 0 ) );
+
+        $bolt_ons = RHCM_DB::get_bolt_ons( true );
+        $page_url = get_permalink();
+
+        ob_start();
+
+        // Completed confirmation
+        if ( ! empty( $_GET['rhcm_join_done'] ) ) {
+            $ref = esc_html( $_GET['ref'] ?? '' );
+            ?>
+            <div class="rhcm-join-confirmed">
+                <div class="rhcm-join-confirmed-icon">&#10003;</div>
+                <h2>Application Received!</h2>
+                <p>Thank you — your membership application has been submitted. Reference: <strong><?= $ref ?></strong>.</p>
+                <p>We'll be in touch by email shortly to confirm your membership and arrange payment.</p>
+            </div>
+            <?php
+            return ob_get_clean();
+        }
+
+        if ( ! empty( $_GET['rhcm_join_error'] ) ) {
+            echo '<div class="rhcm-notice rhcm-notice-error">Please complete all required fields and try again.</div>';
+        }
+        ?>
+        <div class="rhcm-join" id="rhcm-join">
+
+            <!-- Progress stepper -->
+            <div class="rhcm-join-stepper">
+                <div class="rhcm-join-step rhcm-join-step-active" data-step="1">
+                    <div class="rhcm-join-step-circle">1</div>
+                    <div class="rhcm-join-step-label">Membership</div>
+                </div>
+                <div class="rhcm-join-connector"></div>
+                <div class="rhcm-join-step" data-step="2">
+                    <div class="rhcm-join-step-circle">2</div>
+                    <div class="rhcm-join-step-label">Add-ons</div>
+                </div>
+                <div class="rhcm-join-connector"></div>
+                <div class="rhcm-join-step" data-step="3">
+                    <div class="rhcm-join-step-circle">3</div>
+                    <div class="rhcm-join-step-label">Review</div>
+                </div>
+            </div>
+
+            <!-- Step 1: Choose Membership -->
+            <div class="rhcm-join-panel" id="rhcm-join-panel-1">
+                <h2 class="rhcm-join-heading">Choose Membership</h2>
+                <p class="rhcm-join-subheading">Choose the membership category that best suits you. Membership runs 1 April &ndash; 31 March.</p>
+
+                <div class="rhcm-join-section-label">Membership Category</div>
+                <div class="rhcm-join-option-grid" id="rhcm-join-option-grid">
+                <?php foreach ( $active as $key => $cat ): ?>
+                    <div class="rhcm-join-option-card" data-key="<?= esc_attr( $key ) ?>" data-name="<?= esc_attr( $cat['label'] ?? $key ) ?>" data-price="<?= esc_attr( $cat['price'] ?? '' ) ?>">
+                        <div class="rhcm-join-option-header">
+                            <span class="rhcm-join-option-name"><?= esc_html( $cat['label'] ?? $key ) ?></span>
+                            <span class="rhcm-join-option-price"><?= esc_html( $cat['price'] ?? 'POA' )
+                                . ( ! empty( $cat['frequency'] ) ? '<small>' . esc_html( $cat['frequency'] ) . '</small>' : '' ) ?></span>
+                        </div>
+                        <div class="rhcm-join-option-body">
+                            <p><?= esc_html( $cat['tagline'] ?? '' ) ?></p>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+                <?php if ( empty( $active ) ): ?>
+                    <p style="color:#6b7280">No membership categories available yet.</p>
+                <?php endif; ?>
+                </div>
+
+                <button type="button" class="rhcm-btn rhcm-btn-primary rhcm-btn-full rhcm-join-continue" id="rhcm-join-next-1" disabled>
+                    Continue &rarr;
+                </button>
+            </div>
+
+            <!-- Step 2: Add-ons -->
+            <div class="rhcm-join-panel" id="rhcm-join-panel-2" style="display:none">
+                <h2 class="rhcm-join-heading">Add-ons</h2>
+                <p class="rhcm-join-subheading">Enhance your membership with optional extras. All add-ons are optional.</p>
+
+                <?php if ( empty( $bolt_ons ) ): ?>
+                <p style="color:#6b7280;padding:20px 0">No add-ons available at this time.</p>
+                <?php else: ?>
+                <div class="rhcm-join-bolt-ons">
+                    <?php foreach ( $bolt_ons as $b ): ?>
+                    <label class="rhcm-join-bolt-on" data-id="<?= (int) $b['id'] ?>" data-name="<?= esc_attr( $b['name'] ) ?>" data-price="<?= esc_attr( $b['price'] ?? '' ) ?>">
+                        <input type="checkbox" class="rhcm-join-bolt-checkbox" value="<?= (int) $b['id'] ?>">
+                        <div class="rhcm-join-bolt-info">
+                            <strong class="rhcm-join-bolt-name"><?= esc_html( $b['name'] ) ?></strong>
+                            <?php if ( $b['description'] ): ?>
+                            <span class="rhcm-join-bolt-desc"><?= esc_html( $b['description'] ) ?></span>
+                            <?php endif; ?>
+                        </div>
+                        <div class="rhcm-join-bolt-price">
+                            <?php if ( $b['price'] ): ?>
+                            <span><?= esc_html( $b['price'] ) ?></span>
+                            <?php if ( $b['frequency'] ): ?><small><?= esc_html( $b['frequency'] ) ?></small><?php endif; ?>
+                            <?php else: ?><span>POA</span><?php endif; ?>
+                        </div>
+                        <div class="rhcm-join-bolt-check">&#10003;</div>
+                    </label>
+                    <?php endforeach; ?>
+                </div>
+                <?php endif; ?>
+
+                <div class="rhcm-join-nav">
+                    <button type="button" class="rhcm-btn rhcm-btn-outline rhcm-join-back" data-to="1">&larr; Back</button>
+                    <button type="button" class="rhcm-btn rhcm-btn-primary rhcm-join-continue" id="rhcm-join-next-2">Continue &rarr;</button>
+                </div>
+            </div>
+
+            <!-- Step 3: Review + Details -->
+            <div class="rhcm-join-panel" id="rhcm-join-panel-3" style="display:none">
+                <h2 class="rhcm-join-heading">Review &amp; Submit</h2>
+                <p class="rhcm-join-subheading">Check your selection and fill in your details to complete the application.</p>
+
+                <!-- Summary -->
+                <div class="rhcm-join-summary">
+                    <div class="rhcm-join-summary-row rhcm-join-summary-main">
+                        <span class="rhcm-join-summary-label">Membership</span>
+                        <span class="rhcm-join-summary-value" id="rhcm-join-summary-cat">&mdash;</span>
+                    </div>
+                    <div class="rhcm-join-summary-row rhcm-join-summary-price-row">
+                        <span class="rhcm-join-summary-label">Category Price</span>
+                        <span class="rhcm-join-summary-value" id="rhcm-join-summary-price">&mdash;</span>
+                    </div>
+                    <div id="rhcm-join-summary-bolt-rows"></div>
+                </div>
+
+                <form id="rhcm-join-form" method="POST" action="<?= esc_url( $page_url ) ?>">
+                    <?php wp_nonce_field( 'rhcm_membership_join', 'rhcm_join_nonce' ); ?>
+                    <input type="hidden" name="rhcm_join_submit" value="1">
+                    <input type="hidden" name="category_key" id="rhcm-join-field-cat" value="">
+                    <div id="rhcm-join-bolt-inputs"></div>
+
+                    <h4 class="rhcm-section-title">Your Details</h4>
+
+                    <div class="rhcm-form-row">
+                        <div class="rhcm-field">
+                            <label for="rhcm-join-first">First Name *</label>
+                            <input type="text" id="rhcm-join-first" name="first_name" required autocomplete="given-name">
+                        </div>
+                        <div class="rhcm-field">
+                            <label for="rhcm-join-last">Last Name *</label>
+                            <input type="text" id="rhcm-join-last" name="last_name" required autocomplete="family-name">
+                        </div>
+                    </div>
+                    <div class="rhcm-form-row">
+                        <div class="rhcm-field">
+                            <label for="rhcm-join-email">Email Address *</label>
+                            <input type="email" id="rhcm-join-email" name="email" required autocomplete="email">
+                        </div>
+                        <div class="rhcm-field">
+                            <label for="rhcm-join-phone">Phone</label>
+                            <input type="tel" id="rhcm-join-phone" name="phone" autocomplete="tel" placeholder="07700 900123">
+                        </div>
+                    </div>
+                    <div class="rhcm-field">
+                        <label for="rhcm-join-notes">Notes <span class="rhcm-label-hint">(optional)</span></label>
+                        <textarea id="rhcm-join-notes" name="notes" rows="3" placeholder="Any additional information…"></textarea>
+                    </div>
+
+                    <div class="rhcm-join-nav">
+                        <button type="button" class="rhcm-btn rhcm-btn-outline rhcm-join-back" data-to="2">&larr; Back</button>
+                        <button type="submit" class="rhcm-btn rhcm-btn-primary">Submit Application &rarr;</button>
+                    </div>
+                </form>
+            </div>
+
+        </div><!-- .rhcm-join -->
+        <?php
         return ob_get_clean();
     }
 

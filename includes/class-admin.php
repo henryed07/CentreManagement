@@ -19,6 +19,9 @@ class RHCM_Admin {
         add_action( 'admin_post_rhcm_save_category_images',  [ $this, 'handle_save_category_images' ] );
         add_action( 'admin_post_rhcm_save_mem_category',    [ $this, 'handle_save_mem_category' ] );
         add_action( 'admin_post_rhcm_delete_mem_category',  [ $this, 'handle_delete_mem_category' ] );
+        add_action( 'admin_post_rhcm_save_bolt_on',          [ $this, 'handle_save_bolt_on' ] );
+        add_action( 'admin_post_rhcm_delete_bolt_on',        [ $this, 'handle_delete_bolt_on' ] );
+        add_action( 'admin_post_rhcm_update_application_status', [ $this, 'handle_application_status' ] );
     }
 
     public function register_menus() {
@@ -29,6 +32,8 @@ class RHCM_Admin {
         add_submenu_page( 'rhcm', 'Memberships', 'Memberships', 'manage_options', 'rhcm-memberships', [ $this, 'page_memberships' ] );
         add_submenu_page( 'rhcm', 'Membership Categories', 'Membership Categories', 'manage_options', 'rhcm-mem-categories', [ $this, 'page_mem_categories' ] );
         add_submenu_page( 'rhcm', 'Discount Codes', 'Discount Codes', 'manage_options', 'rhcm-discounts', [ $this, 'page_discounts' ] );
+        add_submenu_page( 'rhcm', 'Bolt-ons', 'Bolt-ons', 'manage_options', 'rhcm-bolt-ons', [ $this, 'page_bolt_ons' ] );
+        add_submenu_page( 'rhcm', 'Applications', 'Applications', 'manage_options', 'rhcm-applications', [ $this, 'page_applications' ] );
         add_submenu_page( 'rhcm', 'Category Images', 'Category Images', 'manage_options', 'rhcm-category-images', [ $this, 'page_category_images' ] );
         add_submenu_page( 'rhcm', 'Shortcodes &amp; Help', 'Shortcodes &amp; Help', 'manage_options', 'rhcm-settings', [ $this, 'page_settings' ] );
     }
@@ -1745,6 +1750,185 @@ class RHCM_Admin {
         })();
         </script>
         <?php
+    }
+
+    // ── Bolt-ons ──────────────────────────────────────────────────────────────
+
+    public function page_bolt_ons() {
+        $action = $_GET['action'] ?? 'list';
+        $id     = (int) ( $_GET['id'] ?? 0 );
+        $notice = $_GET['notice'] ?? '';
+        if ( $action === 'edit' || $action === 'new' ) {
+            $bolt_on = $id ? RHCM_DB::get_bolt_on( $id ) : [];
+            $this->render_bolt_on_form( $bolt_on, $notice );
+        } else {
+            $this->render_bolt_on_list( $notice );
+        }
+    }
+
+    private function render_bolt_on_list( string $notice ) {
+        $bolt_ons = RHCM_DB::get_bolt_ons();
+        ?>
+        <div class="wrap rhcm-wrap">
+        <h1 class="wp-heading-inline">Bolt-ons</h1>
+        <a href="<?= esc_url( admin_url('admin.php?page=rhcm-bolt-ons&action=new') ) ?>" class="page-title-action">Add New</a>
+        <p style="color:#6b7280;margin:12px 0 16px">Add-ons that members can include with their membership during the join flow.</p>
+        <?php if ( $notice === 'saved' ):   ?><div class="notice notice-success is-dismissible"><p>Bolt-on saved.</p></div><?php endif; ?>
+        <?php if ( $notice === 'deleted' ): ?><div class="notice notice-success is-dismissible"><p>Bolt-on deleted.</p></div><?php endif; ?>
+
+        <table class="wp-list-table widefat fixed striped rhcm-table" style="margin-top:16px">
+            <thead><tr><th>Order</th><th>Name</th><th>Description</th><th>Price</th><th>Active</th><th>Actions</th></tr></thead>
+            <tbody>
+            <?php foreach ( $bolt_ons as $b ): ?>
+            <tr>
+                <td><?= (int) $b['sort_order'] ?></td>
+                <td><strong><?= esc_html( $b['name'] ) ?></strong></td>
+                <td style="font-size:.84rem;color:#6b7280"><?= esc_html( mb_strimwidth( $b['description'] ?? '', 0, 80, '…' ) ) ?></td>
+                <td><?= esc_html( $b['price'] ) ?><?= $b['frequency'] ? ' <small style="color:#6b7280">' . esc_html( $b['frequency'] ) . '</small>' : '' ?></td>
+                <td><?= $b['is_active'] ? '&#10003;' : '&mdash;' ?></td>
+                <td>
+                    <a href="<?= esc_url( admin_url('admin.php?page=rhcm-bolt-ons&action=edit&id=' . $b['id']) ) ?>">Edit</a>
+                    &nbsp;|&nbsp;
+                    <a href="<?= esc_url( wp_nonce_url( admin_url('admin-post.php?action=rhcm_delete_bolt_on&id=' . $b['id']), 'rhcm_delete_bolt_on_' . $b['id'] ) ) ?>"
+                       onclick="return confirm('Delete this bolt-on?')" style="color:#c0392b">Delete</a>
+                </td>
+            </tr>
+            <?php endforeach; ?>
+            <?php if ( empty( $bolt_ons ) ): ?>
+            <tr><td colspan="6">No bolt-ons yet. <a href="<?= esc_url( admin_url('admin.php?page=rhcm-bolt-ons&action=new') ) ?>">Add one</a>.</td></tr>
+            <?php endif; ?>
+            </tbody>
+        </table>
+        </div>
+        <?php
+    }
+
+    private function render_bolt_on_form( array $b, string $notice ) {
+        $id = (int) ( $b['id'] ?? 0 );
+        ?>
+        <div class="wrap rhcm-wrap">
+        <h1><?= $id ? 'Edit Bolt-on' : 'Add Bolt-on' ?></h1>
+        <a href="<?= esc_url( admin_url('admin.php?page=rhcm-bolt-ons') ) ?>">&larr; Back to Bolt-ons</a>
+        <?php if ( $notice === 'saved' ): ?><div class="notice notice-success is-dismissible" style="margin-top:12px"><p>Bolt-on saved.</p></div><?php endif; ?>
+
+        <form method="POST" action="<?= esc_url( admin_url('admin-post.php') ) ?>" class="rhcm-form">
+            <?php wp_nonce_field( 'rhcm_save_bolt_on', 'rhcm_nonce' ); ?>
+            <input type="hidden" name="action" value="rhcm_save_bolt_on">
+            <input type="hidden" name="id" value="<?= $id ?>">
+
+            <div class="rhcm-form-grid">
+                <div class="rhcm-field">
+                    <label>Name *</label>
+                    <input type="text" name="name" value="<?= esc_attr( $b['name'] ?? '' ) ?>" required placeholder="e.g. Boat Storage">
+                </div>
+                <div class="rhcm-field">
+                    <label>Price <small>(text, e.g. £120 or POA)</small></label>
+                    <input type="text" name="price" value="<?= esc_attr( $b['price'] ?? '' ) ?>" placeholder="£120">
+                </div>
+                <div class="rhcm-field">
+                    <label>Frequency <small>(e.g. /yr, /month)</small></label>
+                    <input type="text" name="frequency" value="<?= esc_attr( $b['frequency'] ?? '' ) ?>" placeholder="/yr">
+                </div>
+                <div class="rhcm-field">
+                    <label>Sort Order</label>
+                    <input type="number" name="sort_order" value="<?= (int) ( $b['sort_order'] ?? 0 ) ?>" min="0">
+                </div>
+                <div class="rhcm-field rhcm-field-full">
+                    <label>Description</label>
+                    <textarea name="description" rows="3" placeholder="Brief description shown to members during sign-up"><?= esc_textarea( $b['description'] ?? '' ) ?></textarea>
+                </div>
+                <div class="rhcm-field">
+                    <label><input type="checkbox" name="is_active" value="1" <?= checked( $b['is_active'] ?? 1, 1, false ) ?>> Active (show on sign-up)</label>
+                </div>
+            </div>
+            <p><button type="submit" class="button button-primary">Save Bolt-on</button></p>
+        </form>
+        </div>
+        <?php
+    }
+
+    public function handle_save_bolt_on() {
+        check_admin_referer( 'rhcm_save_bolt_on', 'rhcm_nonce' );
+        if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Unauthorised' );
+        $id = RHCM_DB::save_bolt_on( $_POST, (int) ( $_POST['id'] ?? 0 ) );
+        wp_redirect( admin_url( 'admin.php?page=rhcm-bolt-ons&action=edit&id=' . $id . '&notice=saved' ) );
+        exit;
+    }
+
+    public function handle_delete_bolt_on() {
+        $id = (int) ( $_GET['id'] ?? 0 );
+        check_admin_referer( 'rhcm_delete_bolt_on_' . $id );
+        if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Unauthorised' );
+        RHCM_DB::delete_bolt_on( $id );
+        wp_redirect( admin_url( 'admin.php?page=rhcm-bolt-ons&notice=deleted' ) );
+        exit;
+    }
+
+    // ── Applications ──────────────────────────────────────────────────────────
+
+    public function page_applications() {
+        $notice = $_GET['notice'] ?? '';
+        $apps   = RHCM_DB::get_applications();
+        $status_labels = [ 'pending' => 'Pending', 'approved' => 'Approved', 'rejected' => 'Rejected' ];
+        $status_colors = [ 'pending' => '#b45309', 'approved' => '#166534', 'rejected' => '#991b1b' ];
+        ?>
+        <div class="wrap rhcm-wrap">
+        <h1>Membership Applications</h1>
+        <p style="color:#6b7280;margin:0 0 16px">Applications submitted via the <code>[rhcm_membership_join]</code> shortcode.</p>
+        <?php if ( $notice === 'updated' ): ?><div class="notice notice-success is-dismissible"><p>Status updated.</p></div><?php endif; ?>
+
+        <table class="wp-list-table widefat fixed striped rhcm-table">
+            <thead><tr><th>Ref</th><th>Name</th><th>Email</th><th>Category</th><th>Bolt-ons</th><th>Status</th><th>Submitted</th><th>Actions</th></tr></thead>
+            <tbody>
+            <?php foreach ( $apps as $a ):
+                $bolt_ids = array_filter( array_map( 'intval', explode( ',', $a['bolt_on_ids'] ?? '' ) ) );
+                $bolt_names = '';
+                if ( $bolt_ids ) {
+                    $bolt_ons = array_filter( array_map( function( $bid ) { return RHCM_DB::get_bolt_on( $bid ); }, $bolt_ids ) );
+                    $bolt_names = implode( ', ', array_column( $bolt_ons, 'name' ) );
+                }
+                $sc = $status_colors[ $a['status'] ] ?? '#6b7280';
+            ?>
+            <tr>
+                <td><strong><?= esc_html( $a['ref'] ) ?></strong></td>
+                <td><?= esc_html( $a['first_name'] . ' ' . $a['last_name'] ) ?></td>
+                <td><a href="mailto:<?= esc_attr( $a['email'] ) ?>"><?= esc_html( $a['email'] ) ?></a></td>
+                <td><?= esc_html( $a['category_name'] ?: $a['category_key'] ) ?></td>
+                <td style="font-size:.82rem;color:#6b7280"><?= $bolt_names ? esc_html( $bolt_names ) : '&mdash;' ?></td>
+                <td><span style="color:<?= esc_attr( $sc ) ?>;font-weight:600;font-size:.82rem"><?= esc_html( $status_labels[ $a['status'] ] ?? ucfirst( $a['status'] ) ) ?></span></td>
+                <td><?= esc_html( date( 'j M Y H:i', strtotime( $a['created_at'] ) ) ) ?></td>
+                <td>
+                    <form method="POST" action="<?= esc_url( admin_url('admin-post.php') ) ?>" style="display:inline-flex;gap:6px;align-items:center">
+                        <?php wp_nonce_field( 'rhcm_update_application_' . $a['id'], 'rhcm_nonce' ); ?>
+                        <input type="hidden" name="action" value="rhcm_update_application_status">
+                        <input type="hidden" name="id" value="<?= (int) $a['id'] ?>">
+                        <select name="status" style="font-size:.82rem;padding:3px 6px">
+                            <?php foreach ( $status_labels as $val => $lbl ): ?>
+                            <option value="<?= esc_attr( $val ) ?>" <?= selected( $a['status'], $val, false ) ?>><?= esc_html( $lbl ) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <button type="submit" class="button button-small">Update</button>
+                    </form>
+                </td>
+            </tr>
+            <?php endforeach; ?>
+            <?php if ( empty( $apps ) ): ?>
+            <tr><td colspan="8">No applications yet.</td></tr>
+            <?php endif; ?>
+            </tbody>
+        </table>
+        </div>
+        <?php
+    }
+
+    public function handle_application_status() {
+        $id = (int) ( $_POST['id'] ?? 0 );
+        check_admin_referer( 'rhcm_update_application_' . $id, 'rhcm_nonce' );
+        if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Unauthorised' );
+        $status = in_array( $_POST['status'] ?? '', [ 'pending', 'approved', 'rejected' ] ) ? $_POST['status'] : 'pending';
+        RHCM_DB::update_application_status( $id, $status );
+        wp_redirect( admin_url( 'admin.php?page=rhcm-applications&notice=updated' ) );
+        exit;
     }
 
     public function handle_booking_status() {

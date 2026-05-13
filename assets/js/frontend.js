@@ -494,4 +494,126 @@
 
     updateCartUI();
 
+    // ── Membership Join flow ──────────────────────────────────────────────────
+
+    (function () {
+        var join = document.getElementById('rhcm-join');
+        if (!join) return;
+
+        var state = { step: 1, catKey: '', catName: '', catPrice: '', boltOns: [] };
+
+        function goToStep(n) {
+            state.step = n;
+            join.querySelectorAll('.rhcm-join-panel').forEach(function (p) {
+                p.style.display = 'none';
+            });
+            var panel = document.getElementById('rhcm-join-panel-' + n);
+            if (panel) panel.style.display = '';
+
+            // Update stepper
+            join.querySelectorAll('.rhcm-join-step').forEach(function (el) {
+                var s = parseInt(el.getAttribute('data-step'));
+                el.classList.remove('rhcm-join-step-active', 'rhcm-join-step-done');
+                if (s === n) el.classList.add('rhcm-join-step-active');
+                else if (s < n) el.classList.add('rhcm-join-step-done');
+            });
+
+            join.querySelectorAll('.rhcm-join-connector').forEach(function (el, i) {
+                el.classList.toggle('rhcm-join-done', i + 1 < n);
+            });
+
+            if (n === 3) buildSummary();
+        }
+
+        function buildSummary() {
+            var catEl = document.getElementById('rhcm-join-summary-cat');
+            var priceEl = document.getElementById('rhcm-join-summary-price');
+            if (catEl) catEl.textContent = state.catName || '—';
+            if (priceEl) priceEl.textContent = state.catPrice || 'POA';
+
+            // Hidden input for category
+            var catInput = document.getElementById('rhcm-join-field-cat');
+            if (catInput) catInput.value = state.catKey;
+
+            // Bolt-on summary rows
+            var boltRows = document.getElementById('rhcm-join-summary-bolt-rows');
+            var boltInputs = document.getElementById('rhcm-join-bolt-inputs');
+            if (boltRows) boltRows.innerHTML = '';
+            if (boltInputs) boltInputs.innerHTML = '';
+
+            state.boltOns.forEach(function (bo) {
+                if (boltRows) {
+                    var row = document.createElement('div');
+                    row.className = 'rhcm-join-summary-row';
+                    row.innerHTML = '<span class="rhcm-join-summary-label">Add-on</span><span class="rhcm-join-summary-value">' +
+                        escHtml(bo.name) + (bo.price ? ' &mdash; ' + escHtml(bo.price) : '') + '</span>';
+                    boltRows.appendChild(row);
+                }
+                if (boltInputs) {
+                    var inp = document.createElement('input');
+                    inp.type = 'hidden';
+                    inp.name = 'bolt_ons[]';
+                    inp.value = bo.id;
+                    boltInputs.appendChild(inp);
+                }
+            });
+        }
+
+        // Option card selection
+        join.addEventListener('click', function (e) {
+            var card = e.target.closest('.rhcm-join-option-card');
+            if (card) {
+                join.querySelectorAll('.rhcm-join-option-card').forEach(function (c) {
+                    c.classList.remove('rhcm-join-selected');
+                });
+                card.classList.add('rhcm-join-selected');
+                state.catKey   = card.getAttribute('data-key');
+                state.catName  = card.getAttribute('data-name');
+                state.catPrice = card.getAttribute('data-price');
+                var btn = document.getElementById('rhcm-join-next-1');
+                if (btn) btn.disabled = false;
+                return;
+            }
+
+            // Bolt-on toggle
+            var boltRow = e.target.closest('.rhcm-join-bolt-on');
+            if (boltRow) {
+                var chk = boltRow.querySelector('input[type="checkbox"]');
+                if (chk) {
+                    chk.checked = !chk.checked;
+                    boltRow.classList.toggle('rhcm-bolt-checked', chk.checked);
+                    var boId   = parseInt(boltRow.getAttribute('data-id'));
+                    var boName = boltRow.getAttribute('data-name');
+                    var boPrice = boltRow.getAttribute('data-price');
+                    if (chk.checked) {
+                        if (!state.boltOns.some(function (b) { return b.id === boId; })) {
+                            state.boltOns.push({ id: boId, name: boName, price: boPrice });
+                        }
+                    } else {
+                        state.boltOns = state.boltOns.filter(function (b) { return b.id !== boId; });
+                    }
+                }
+                return;
+            }
+
+            // Continue / next
+            if (e.target.classList.contains('rhcm-join-continue') || e.target.id === 'rhcm-join-next-2') {
+                var cur = state.step;
+                if (cur === 1 && !state.catKey) return;
+                goToStep(cur + 1);
+                return;
+            }
+
+            // Back
+            var back = e.target.closest('.rhcm-join-back');
+            if (back) {
+                var to = parseInt(back.getAttribute('data-to') || '1');
+                goToStep(to);
+            }
+        });
+
+        // Init step 1
+        goToStep(1);
+    })();
+
 })();
