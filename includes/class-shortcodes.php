@@ -625,7 +625,7 @@ class RHCM_Shortcodes {
         if ( empty( $active ) ) return '<p>No membership categories available yet.</p>';
 
         ob_start();
-        echo '<div class="rhcm-mem-grid">';
+        echo '<div class="rhcm-mem-grid rhcm-mem-cat-grid">';
         foreach ( $active as $key => $cat ) {
             echo $this->render_mem_card( [
                 'name'       => $cat['label']     ?? $key,
