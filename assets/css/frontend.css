@@ -1447,6 +1447,23 @@
 .rhcm-join-summary-label { color: var(--rhcm-muted); }
 .rhcm-join-summary-value { font-weight: 600; text-align: right; }
 
+.rhcm-join-summary-total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--rhcm-navy);
+    color: #fff;
+    padding: 13px 22px;
+    border-radius: 0 0 8px 8px;
+    margin: 10px -22px -20px;
+    font-size: .95rem;
+    font-weight: 600;
+}
+.rhcm-join-summary-total-row strong {
+    color: var(--rhcm-gold);
+    font-size: 1.1rem;
+}
+
 /* Account creation panel */
 .rhcm-join-account-info {
     display: flex;

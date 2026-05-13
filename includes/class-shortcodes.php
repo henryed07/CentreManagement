@@ -1227,10 +1227,14 @@ class RHCM_Shortcodes {
                         <span class="rhcm-join-summary-value" id="rhcm-join-summary-cat">&mdash;</span>
                     </div>
                     <div class="rhcm-join-summary-row rhcm-join-summary-price-row">
-                        <span class="rhcm-join-summary-label">Category Price</span>
+                        <span class="rhcm-join-summary-label">Price</span>
                         <span class="rhcm-join-summary-value" id="rhcm-join-summary-price">&mdash;</span>
                     </div>
                     <div id="rhcm-join-summary-bolt-rows"></div>
+                    <div class="rhcm-join-summary-total-row">
+                        <span>Total</span>
+                        <strong id="rhcm-join-summary-total">&mdash;</strong>
+                    </div>
                 </div>
 
                 <h4 class="rhcm-section-title">Your Details</h4>

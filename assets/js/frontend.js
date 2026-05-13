@@ -566,6 +566,8 @@
             if (boltRows) boltRows.innerHTML = '';
             if (boltInputs) boltInputs.innerHTML = '';
 
+            var total = state.catAnnual;
+
             state.boltOns.forEach(function (bo) {
                 if (boltRows) {
                     var row = document.createElement('div');
@@ -581,7 +583,14 @@
                     inp.value = bo.id;
                     boltInputs.appendChild(inp);
                 }
+                var boNum = parseFloat(String(bo.price).replace(/[^0-9.]/g, '')) || 0;
+                total += boNum;
             });
+
+            var totalEl = document.getElementById('rhcm-join-summary-total');
+            if (totalEl) {
+                totalEl.textContent = total > 0 ? '£' + total.toFixed(2) : 'POA';
+            }
         }
 
         // Option card selection
