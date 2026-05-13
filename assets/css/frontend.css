@@ -1190,8 +1190,9 @@
 
 /* ── Membership Join [rhcm_membership_join] ───────────────────── */
 .rhcm-join {
-    max-width: 720px;
+    max-width: 600px;
     margin: 0 auto;
+    padding: 0 4px;
 }
 
 /* Stepper */
@@ -1278,7 +1279,7 @@
 .rhcm-join-option-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 14px;
+    gap: 12px;
     margin-bottom: 28px;
 }
 @media (max-width: 480px) { .rhcm-join-option-grid { grid-template-columns: 1fr; } }
@@ -1288,13 +1289,18 @@
     border-radius: 10px;
     overflow: hidden;
     cursor: pointer;
-    transition: border-color .18s, transform .18s;
+    transition: border-color .18s, transform .18s, box-shadow .18s;
     background: #fff;
+    box-shadow: 0 1px 4px rgba(0,0,0,.07);
 }
-.rhcm-join-option-card:hover { border-color: #4a9eca; transform: translateY(-1px); }
+.rhcm-join-option-card:hover {
+    border-color: #4a9eca;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 14px rgba(0,0,0,.11);
+}
 .rhcm-join-option-card.rhcm-join-selected {
     border-color: var(--rhcm-navy);
-    box-shadow: 0 0 0 3px rgba(10,35,66,.15);
+    box-shadow: 0 0 0 3px rgba(10,35,66,.18);
 }
 
 .rhcm-join-option-header {
@@ -1303,34 +1309,36 @@
     align-items: center;
     justify-content: space-between;
     gap: 10px;
-    padding: 14px 18px;
+    padding: 13px 16px;
 }
 .rhcm-join-option-name {
     color: #fff;
     font-weight: 700;
-    font-size: .95rem;
+    font-size: .9rem;
     line-height: 1.3;
 }
 .rhcm-join-option-price {
     color: var(--rhcm-gold);
     font-weight: 700;
-    font-size: .92rem;
+    font-size: .9rem;
     white-space: nowrap;
     text-align: right;
     flex-shrink: 0;
 }
 .rhcm-join-option-price small {
-    display: inline;
-    font-size: .78rem;
-    font-weight: 600;
-    color: var(--rhcm-gold);
+    display: block;
+    font-size: .72rem;
+    font-weight: 500;
+    color: rgba(200,168,75,.8);
+    margin-top: 1px;
 }
 .rhcm-join-option-body {
-    padding: 12px 18px 14px;
+    padding: 10px 16px 13px;
+    min-height: 42px;
 }
 .rhcm-join-option-body p {
     color: var(--rhcm-muted);
-    font-size: .84rem;
+    font-size: .82rem;
     line-height: 1.5;
     margin: 0;
 }
