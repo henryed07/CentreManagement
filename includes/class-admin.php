@@ -1521,11 +1521,11 @@ class RHCM_Admin {
         <div class="rhcm-help-card">
             <div class="rhcm-help-card-header">
                 <code class="rhcm-sc-code">[rhcm_mem_categories]</code>
-                <span class="rhcm-help-badge">Membership Category Cards</span>
+                <span class="rhcm-help-badge">Membership Category Tiles</span>
             </div>
             <p class="rhcm-help-desc">
-                Displays membership <strong>categories</strong> as a responsive grid of full cards — icon, name, tagline, optional price, bullet-point features, and a <strong>Find Out More</strong> button.
-                Use this as the top-level overview of your membership offering. Manage categories under <a href="<?= esc_url( admin_url('admin.php?page=rhcm-mem-categories') ) ?>">Centre Management &rarr; Membership Categories</a>.
+                Displays membership <strong>categories</strong> as a compact price-tile grid — navy header with price prominent, name and tagline below, no button.
+                Use this as a quick overview grid of your membership categories. Manage categories under <a href="<?= esc_url( admin_url('admin.php?page=rhcm-mem-categories') ) ?>">Centre Management &rarr; Membership Categories</a>.
             </p>
             <h4 class="rhcm-help-params-title">Examples</h4>
             <div class="rhcm-help-examples">

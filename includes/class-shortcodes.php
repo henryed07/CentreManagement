@@ -623,18 +623,14 @@ class RHCM_Shortcodes {
         if ( empty( $active ) ) return '<p>No membership categories available yet.</p>';
 
         ob_start();
-        echo '<div class="rhcm-mem-grid">';
+        echo '<div class="rhcm-mem-tile-grid">';
         foreach ( $active as $key => $cat ) {
-            // Normalise category data into the same shape render_mem_card() expects
-            echo $this->render_mem_card( [
-                'name'       => $cat['label']      ?? $key,
-                'icon'       => $cat['icon']        ?? '',
-                'tagline'    => $cat['tagline']     ?? '',
-                'price'      => $cat['price']       ?? '',
-                'frequency'  => $cat['frequency']   ?? '',
-                'details'    => $cat['details']     ?? '',
-                'is_popular' => $cat['is_popular']  ?? 0,
-                'info_url'   => $cat['info_url']    ?? '',
+            // Normalise category data into the same shape render_mem_tile() expects
+            echo $this->render_mem_tile( [
+                'name'      => $cat['label']     ?? $key,
+                'price'     => $cat['price']     ?? '',
+                'frequency' => $cat['frequency'] ?? '',
+                'tagline'   => $cat['tagline']   ?? '',
             ] );
         }
         echo '</div>';
