@@ -674,6 +674,7 @@ class RHCM_Shortcodes {
         $price   = trim( $m['price'] ?? '' );
         $freq    = trim( $m['frequency'] ?? '' );
         $tagline = trim( $m['tagline'] ?? '' );
+        $url     = ! empty( $m['info_url'] ) ? esc_url( $m['info_url'] ) : '#';
 
         ob_start();
         ?>
@@ -693,6 +694,9 @@ class RHCM_Shortcodes {
                 <?php if ( $tagline ): ?>
                 <p class="rhcm-mem-tile-desc"><?= esc_html( $tagline ) ?></p>
                 <?php endif; ?>
+            </div>
+            <div class="rhcm-mem-tile-footer">
+                <a href="<?= $url ?>" class="rhcm-mem-tile-btn">Join Now &rarr;</a>
             </div>
         </div>
         <?php
