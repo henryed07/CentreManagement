@@ -589,6 +589,15 @@ KEY email (email)
         );
     }
 
+    public static function get_application_by_ref( string $ref ): ?array {
+        global $wpdb;
+        $row = $wpdb->get_row(
+            $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}rhcm_applications WHERE ref = %s", $ref ),
+            ARRAY_A
+        );
+        return $row ?: null;
+    }
+
     public static function create_application( array $data ) {
         global $wpdb;
         $chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';

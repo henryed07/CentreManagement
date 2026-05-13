@@ -12,7 +12,8 @@ class RHCM_Shortcodes {
         add_shortcode( 'rhcm_memberships',  [ $this, 'render_memberships' ] );
         add_shortcode( 'rhcm_mem_categories', [ $this, 'render_mem_cat_sc' ] );
         add_shortcode( 'rhcm_session',        [ $this, 'render_session_detail' ] );
-        add_shortcode( 'rhcm_membership_join', [ $this, 'render_membership_join' ] );
+        add_shortcode( 'rhcm_membership_join',      [ $this, 'render_membership_join' ] );
+        add_shortcode( 'rhcm_member_dashboard',     [ $this, 'render_member_dashboard' ] );
         add_action( 'wp_enqueue_scripts', [ $this, 'enqueue' ] );
         add_action( 'init',              [ $this, 'handle_booking_post' ] );
         add_action( 'init',              [ $this, 'handle_join_post' ] );
@@ -23,7 +24,7 @@ class RHCM_Shortcodes {
     public function enqueue() {
         global $post;
         if ( ! $post ) return;
-        $shortcodes = [ 'rhcm_schedule', 'rhcm_course', 'rhcm_course_card', 'rhcm_courses', 'rhcm_tag', 'rhcm_memberships', 'rhcm_mem_categories', 'rhcm_session', 'rhcm_membership_join' ];
+        $shortcodes = [ 'rhcm_schedule', 'rhcm_course', 'rhcm_course_card', 'rhcm_courses', 'rhcm_tag', 'rhcm_memberships', 'rhcm_mem_categories', 'rhcm_session', 'rhcm_membership_join', 'rhcm_member_dashboard' ];
         $needs_assets = false;
         foreach ( $shortcodes as $sc ) {
             if ( has_shortcode( $post->post_content, $sc ) ) { $needs_assets = true; break; }
@@ -887,6 +888,82 @@ class RHCM_Shortcodes {
         echo $this->cart_html( $page_url );
         echo $this->checkout_modal_html( $page_url );
 
+        return ob_get_clean();
+    }
+
+    // ── [rhcm_member_dashboard] ───────────────────────────────────────────────
+
+    public function render_member_dashboard( array $atts ): string {
+        $user = wp_get_current_user();
+        if ( ! $user->ID ) {
+            return '<div class="rhcm-notice rhcm-notice-error">Please <a href="' . esc_url( wp_login_url( get_permalink() ) ) . '">log in</a> to view your membership dashboard.</div>';
+        }
+
+        $ref = get_user_meta( $user->ID, 'rhcm_membership_ref', true );
+        if ( ! $ref ) {
+            return '<div class="rhcm-notice rhcm-notice-error">No membership found for your account. Please contact us if you believe this is an error.</div>';
+        }
+
+        $app = RHCM_DB::get_application_by_ref( $ref );
+        if ( ! $app ) {
+            return '<div class="rhcm-notice rhcm-notice-error">Membership details could not be loaded. Reference: <strong>' . esc_html( $ref ) . '</strong>.</div>';
+        }
+
+        // Dates
+        $created     = new \DateTime( $app['created_at'] );
+        $memberSince = $created->format( 'F Y' );
+
+        // Valid until next 30 April
+        $now        = new \DateTime( 'today' );
+        $validUntil = new \DateTime( $now->format( 'Y' ) . '-04-30' );
+        if ( $now > $validUntil ) $validUntil->modify( '+1 year' );
+        $validUntilStr = $validUntil->format( 'j F Y' );
+
+        $catName  = $app['category_name'];
+        $ddStatus = $app['dd_status'] ?? '';
+
+        // Short badge = first word of category
+        $badge = explode( ' ', $catName )[0];
+
+        ob_start();
+        ?>
+        <div class="rhcm-dashboard">
+
+            <!-- Membership card -->
+            <div class="rhcm-member-card">
+                <div class="rhcm-member-card-body">
+                    <h2 class="rhcm-member-card-title"><?= esc_html( $catName ) ?></h2>
+                    <p class="rhcm-member-card-valid">Valid until <?= esc_html( $validUntilStr ) ?></p>
+                    <p class="rhcm-member-card-since">Member since <?= esc_html( $memberSince ) ?></p>
+                </div>
+                <div class="rhcm-member-card-badge"><?= esc_html( $badge ) ?></div>
+            </div>
+
+            <!-- Details strip -->
+            <div class="rhcm-dashboard-strip">
+                <div class="rhcm-dashboard-strip-item">
+                    <span class="rhcm-dashboard-strip-label">Reference</span>
+                    <strong class="rhcm-dashboard-strip-value"><?= esc_html( $ref ) ?></strong>
+                </div>
+                <div class="rhcm-dashboard-strip-item">
+                    <span class="rhcm-dashboard-strip-label">Direct Debit</span>
+                    <strong class="rhcm-dashboard-strip-value rhcm-dd-status-<?= esc_attr( $ddStatus ) ?>">
+                        <?php
+                        if ( $ddStatus === 'active' )  echo '&#10003; Active';
+                        elseif ( $ddStatus === 'pending' ) echo '&#9679; Pending setup';
+                        elseif ( $ddStatus === 'error' )   echo '&#9888; Setup failed';
+                        else echo '&mdash;';
+                        ?>
+                    </strong>
+                </div>
+                <div class="rhcm-dashboard-strip-item">
+                    <span class="rhcm-dashboard-strip-label">Name</span>
+                    <strong class="rhcm-dashboard-strip-value"><?= esc_html( $app['first_name'] . ' ' . $app['last_name'] ) ?></strong>
+                </div>
+            </div>
+
+        </div><!-- .rhcm-dashboard -->
+        <?php
         return ob_get_clean();
     }
 

@@ -1188,6 +1188,89 @@
     margin-top: 1px;
 }
 
+/* ── Member dashboard [rhcm_member_dashboard] ─────────────────── */
+.rhcm-member-card {
+    background: linear-gradient(135deg, #0a2342 0%, #133460 55%, #1a4a8a 100%);
+    border-radius: 14px;
+    padding: 36px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 20px;
+    box-shadow: 0 6px 28px rgba(10,35,66,.3);
+}
+.rhcm-member-card-body { flex: 1; }
+.rhcm-member-card-title {
+    color: var(--rhcm-gold);
+    font-size: 1.9rem;
+    font-weight: 700;
+    margin: 0 0 10px;
+    line-height: 1.2;
+}
+.rhcm-member-card-valid {
+    color: rgba(255,255,255,.88);
+    font-size: .92rem;
+    margin: 0 0 5px;
+}
+.rhcm-member-card-since {
+    color: rgba(255,255,255,.5);
+    font-size: .86rem;
+    margin: 0;
+}
+.rhcm-member-card-badge {
+    background: var(--rhcm-gold);
+    color: var(--rhcm-navy);
+    border-radius: 100px;
+    padding: 10px 26px;
+    font-weight: 700;
+    font-size: 1rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+    letter-spacing: .01em;
+}
+
+.rhcm-dashboard-strip {
+    display: flex;
+    gap: 0;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,.07);
+    overflow: hidden;
+    margin-bottom: 32px;
+}
+.rhcm-dashboard-strip-item {
+    flex: 1;
+    padding: 18px 24px;
+    border-right: 1px solid var(--rhcm-light);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.rhcm-dashboard-strip-item:last-child { border-right: none; }
+.rhcm-dashboard-strip-label {
+    font-size: .72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--rhcm-muted);
+}
+.rhcm-dashboard-strip-value {
+    font-size: .95rem;
+    color: var(--rhcm-navy);
+}
+.rhcm-dd-status-active  { color: var(--rhcm-green); }
+.rhcm-dd-status-pending { color: var(--rhcm-amber); }
+.rhcm-dd-status-error   { color: var(--rhcm-red); }
+
+@media (max-width: 600px) {
+    .rhcm-member-card { flex-direction: column; align-items: flex-start; padding: 28px 24px; }
+    .rhcm-member-card-title { font-size: 1.4rem; }
+    .rhcm-dashboard-strip { flex-direction: column; }
+    .rhcm-dashboard-strip-item { border-right: none; border-bottom: 1px solid var(--rhcm-light); }
+    .rhcm-dashboard-strip-item:last-child { border-bottom: none; }
+}
+
 /* ── Membership Join [rhcm_membership_join] ───────────────────── */
 .rhcm-join {
     max-width: 740px;
