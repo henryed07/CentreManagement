@@ -21,6 +21,7 @@ price DECIMAL(8,2) NOT NULL DEFAULT 0,
 duration VARCHAR(80) NOT NULL DEFAULT '',
 level VARCHAR(80) NOT NULL DEFAULT '',
 rya_cert VARCHAR(80) NOT NULL DEFAULT '',
+req_badge_color VARCHAR(20) NOT NULL DEFAULT '',
 max_participants INT UNSIGNED NOT NULL DEFAULT 12,
 sort_order INT NOT NULL DEFAULT 0,
 is_active TINYINT(1) NOT NULL DEFAULT 1,
@@ -186,6 +187,7 @@ KEY email (email)
             'duration'         => sanitize_text_field( $data['duration'] ?? '' ),
             'level'            => sanitize_text_field( $data['level'] ?? '' ),
             'rya_cert'         => sanitize_text_field( $data['rya_cert'] ?? '' ),
+            'req_badge_color'  => sanitize_text_field( $data['req_badge_color'] ?? '' ),
             'max_participants' => max( 1, (int) ( $data['max_participants'] ?? 12 ) ),
             'sort_order'       => (int) ( $data['sort_order'] ?? 0 ),
             'is_active'        => isset( $data['is_active'] ) ? 1 : 0,
@@ -229,7 +231,7 @@ KEY email (email)
 
         $sql = "
             SELECT s.*,
-                   c.title, c.icon, c.category, c.price, c.duration, c.level, c.rya_cert, c.description, c.image_url,
+                   c.title, c.icon, c.category, c.price, c.duration, c.level, c.rya_cert, c.req_badge_color, c.description, c.image_url,
                    COALESCE(s.spaces, c.max_participants) AS total_spaces,
                    (SELECT COALESCE(SUM(b.spaces), 0) FROM {$wpdb->prefix}rhcm_bookings b
                     WHERE b.session_id = s.id AND b.status = 'confirmed') AS enrolled
@@ -250,7 +252,7 @@ KEY email (email)
         $cc = $wpdb->prefix . 'rhcm_courses';
         return $wpdb->get_row(
             $wpdb->prepare(
-                "SELECT s.*, c.title, c.icon, c.category, c.price, c.duration, c.level, c.rya_cert, c.description, c.image_url,
+                "SELECT s.*, c.title, c.icon, c.category, c.price, c.duration, c.level, c.rya_cert, c.req_badge_color, c.description, c.image_url,
                         COALESCE(s.spaces, c.max_participants) AS total_spaces,
                         (SELECT COALESCE(SUM(b.spaces), 0) FROM {$wpdb->prefix}rhcm_bookings b WHERE b.session_id = s.id AND b.status = 'confirmed') AS enrolled
                  FROM $cs s JOIN $cc c ON s.course_id = c.id

@@ -144,13 +144,18 @@
     font-size: .76rem;
     color: var(--rhcm-muted);
 }
-.rhcm-meta .rhcm-req-badge {
+.rhcm-req-badge {
+    display: inline-block;
     background: #fff3e0;
     color: #b84d00;
     border: 1px solid #f5aa60;
+    border-radius: 20px;
+    padding: 2px 10px;
+    font-size: .76rem;
     font-weight: 500;
+    margin: 6px 0 8px;
 }
-.rhcm-meta .rhcm-req-badge strong {
+.rhcm-req-badge strong {
     font-size: .68rem;
     letter-spacing: .06em;
     margin-right: 2px;

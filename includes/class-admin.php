@@ -193,6 +193,30 @@ class RHCM_Admin {
                     <input type="text" name="rya_cert" value="<?= esc_attr( $c['rya_cert'] ?? '' ) ?>" placeholder="e.g. RYA Level 1">
                 </div>
                 <div class="rhcm-field">
+                    <label>Badge Colour <small>(colour of the REQUIRES pill — leave blank to use default orange)</small></label>
+                    <div style="display:flex;align-items:center;gap:10px">
+                        <input type="color" name="req_badge_color" id="rhcm-badge-color"
+                               value="<?= esc_attr( $c['req_badge_color'] ?? '#b84d00' ) ?>">
+                        <label style="font-weight:400;margin:0">
+                            <input type="checkbox" id="rhcm-badge-color-default"
+                                   <?= empty( $c['req_badge_color'] ) ? 'checked' : '' ?>>
+                            Use default
+                        </label>
+                    </div>
+                    <script>
+                    (function(){
+                        var cb = document.getElementById('rhcm-badge-color-default');
+                        var inp = document.getElementById('rhcm-badge-color');
+                        if (!cb || !inp) return;
+                        cb.addEventListener('change', function(){ inp.disabled = cb.checked; });
+                        inp.disabled = cb.checked;
+                        inp.form.addEventListener('submit', function(){
+                            if (cb.checked) inp.value = '';
+                        });
+                    })();
+                    </script>
+                </div>
+                <div class="rhcm-field">
                     <label>Max Participants</label>
                     <input type="number" name="max_participants" min="1" value="<?= esc_attr( $c['max_participants'] ?? 12 ) ?>">
                 </div>

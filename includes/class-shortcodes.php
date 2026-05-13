@@ -289,11 +289,14 @@ class RHCM_Shortcodes {
                 <h3><?= esc_html( $s['icon'] . ' ' . $s['title'] ) ?></h3>
                 <span class="rhcm-price">&pound;<?= esc_html( number_format( (float) $s['price'], 0 ) ) ?></span>
             </div>
+            <?php if ( $s['rya_cert'] ):
+                $badge_style = ! empty( $s['req_badge_color'] ) ? ' style="border-color:' . esc_attr( $s['req_badge_color'] ) . ';color:' . esc_attr( $s['req_badge_color'] ) . '"' : ''; ?>
+            <span class="rhcm-req-badge"<?= $badge_style ?>><strong>REQUIRES:</strong> <?= esc_html( $s['rya_cert'] ) ?></span>
+            <?php endif; ?>
             <div class="rhcm-meta">
                 <span>&#128197; <?= $date_str ?></span>
                 <?php if ( $s['duration'] ): ?><span>&#9201; <?= esc_html( $s['duration'] ) ?></span><?php endif; ?>
                 <?php if ( $s['level'] ):    ?><span><?= esc_html( $s['level'] ) ?></span><?php endif; ?>
-                <?php if ( $s['rya_cert'] ): ?><span class="rhcm-req-badge"><strong>REQUIRES:</strong> <?= esc_html( $s['rya_cert'] ) ?></span><?php endif; ?>
                 <?php if ( $s['total_spaces'] ): ?><span>&#128101; Max <?= (int) $s['total_spaces'] ?></span><?php endif; ?>
             </div>
             <?php if ( $s['description'] ): ?><p class="rhcm-desc"><?= esc_html( $s['description'] ) ?></p><?php endif; ?>
@@ -394,11 +397,14 @@ class RHCM_Shortcodes {
                 <h3><?= esc_html( $s['icon'] . ' ' . $s['title'] ) ?></h3>
                 <span class="rhcm-price">&pound;<?= esc_html( number_format( (float) $s['price'], 0 ) ) ?></span>
             </div>
+            <?php if ( $s['rya_cert'] ):
+                $badge_style = ! empty( $s['req_badge_color'] ) ? ' style="border-color:' . esc_attr( $s['req_badge_color'] ) . ';color:' . esc_attr( $s['req_badge_color'] ) . '"' : ''; ?>
+            <span class="rhcm-req-badge"<?= $badge_style ?>><strong>REQUIRES:</strong> <?= esc_html( $s['rya_cert'] ) ?></span>
+            <?php endif; ?>
             <div class="rhcm-meta">
                 <span>&#128197; <?= $date_str ?></span>
                 <?php if ( $s['duration'] ): ?><span>&#9201; <?= esc_html( $s['duration'] ) ?></span><?php endif; ?>
                 <?php if ( $s['level'] ):    ?><span><?= esc_html( $s['level'] ) ?></span><?php endif; ?>
-                <?php if ( $s['rya_cert'] ): ?><span class="rhcm-req-badge"><strong>REQUIRES:</strong> <?= esc_html( $s['rya_cert'] ) ?></span><?php endif; ?>
                 <?php if ( $s['total_spaces'] ): ?><span>&#128101; Max <?= (int) $s['total_spaces'] ?></span><?php endif; ?>
             </div>
             <?php if ( $s['description'] ): ?><p class="rhcm-desc"><?= esc_html( $s['description'] ) ?></p><?php endif; ?>
@@ -464,11 +470,14 @@ class RHCM_Shortcodes {
                 <span class="rhcm-price">&pound;<?= number_format( $price, 0 ) ?></span>
                 <?php endif; ?>
             </div>
+            <?php if ( $course['rya_cert'] ):
+                $badge_style = ! empty( $course['req_badge_color'] ) ? ' style="border-color:' . esc_attr( $course['req_badge_color'] ) . ';color:' . esc_attr( $course['req_badge_color'] ) . '"' : ''; ?>
+            <span class="rhcm-req-badge"<?= $badge_style ?>><strong>REQUIRES:</strong> <?= esc_html( $course['rya_cert'] ) ?></span>
+            <?php endif; ?>
 
             <div class="rhcm-meta">
                 <?php if ( $course['duration'] ): ?><span>&#9201; <?= esc_html( $course['duration'] ) ?></span><?php endif; ?>
                 <?php if ( $course['level'] ):    ?><span><?= esc_html( $course['level'] ) ?></span><?php endif; ?>
-                <?php if ( $course['rya_cert'] ): ?><span class="rhcm-req-badge"><strong>REQUIRES:</strong> <?= esc_html( $course['rya_cert'] ) ?></span><?php endif; ?>
                 <?php if ( $course['max_participants'] ): ?><span>&#128101; Max <?= (int) $course['max_participants'] ?></span><?php endif; ?>
             </div>
 
@@ -559,11 +568,14 @@ class RHCM_Shortcodes {
                     <span class="rhcm-price">&pound;<?= number_format( $price, 0 ) ?></span>
                     <?php endif; ?>
                 </div>
+                <?php if ( $course['rya_cert'] ):
+                    $badge_style = ! empty( $course['req_badge_color'] ) ? ' style="border-color:' . esc_attr( $course['req_badge_color'] ) . ';color:' . esc_attr( $course['req_badge_color'] ) . '"' : ''; ?>
+                <span class="rhcm-req-badge"<?= $badge_style ?>><strong>REQUIRES:</strong> <?= esc_html( $course['rya_cert'] ) ?></span>
+                <?php endif; ?>
 
                 <div class="rhcm-meta">
                     <?php if ( $course['duration'] ): ?><span>&#9201; <?= esc_html( $course['duration'] ) ?></span><?php endif; ?>
                     <?php if ( $course['level'] ):    ?><span><?= esc_html( $course['level'] ) ?></span><?php endif; ?>
-                    <?php if ( $course['rya_cert'] ): ?><span class="rhcm-req-badge"><strong>REQUIRES:</strong> <?= esc_html( $course['rya_cert'] ) ?></span><?php endif; ?>
                     <?php if ( $course['max_participants'] ): ?><span>&#128101; Max <?= (int) $course['max_participants'] ?></span><?php endif; ?>
                 </div>
 
