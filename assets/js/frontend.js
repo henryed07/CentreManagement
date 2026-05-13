@@ -635,6 +635,16 @@
             if (e.target.classList.contains('rhcm-join-continue') || e.target.id === 'rhcm-join-next-2') {
                 var cur = state.step;
                 if (cur === 1 && !state.catKey) return;
+                if (cur === 4 && ddEnabled) {
+                    var ddChk = document.getElementById('rhcm-join-dd-confirm');
+                    var ddErr = document.getElementById('rhcm-join-dd-confirm-error');
+                    if (ddChk && !ddChk.checked) {
+                        if (ddErr) ddErr.style.display = 'block';
+                        ddChk.focus();
+                        return;
+                    }
+                    if (ddErr) ddErr.style.display = 'none';
+                }
                 goToStep(cur + 1);
                 return;
             }

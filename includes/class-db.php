@@ -602,7 +602,7 @@ KEY email (email)
         global $wpdb;
         $chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
         do {
-            $ref = 'MA';
+            $ref = 'QM';
             for ( $i = 0; $i < 6; $i++ ) $ref .= $chars[ random_int( 0, strlen( $chars ) - 1 ) ];
             $exists = $wpdb->get_var( $wpdb->prepare(
                 "SELECT id FROM {$wpdb->prefix}rhcm_applications WHERE ref = %s", $ref

@@ -1273,7 +1273,7 @@
 
 /* ── Membership Join [rhcm_membership_join] ───────────────────── */
 .rhcm-join {
-    max-width: 740px;
+    max-width: 370px;
     min-height: 800px;
     margin: 0 auto;
     padding: 60px 40px;

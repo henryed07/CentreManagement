@@ -1065,6 +1065,12 @@ class RHCM_Shortcodes {
                 $paysuite_id  = $customer_resp['Id'] ?? '';
 
                 $monthly_price = RHCM_Paysuite::parsePrice( $membership['price'] ?? '' );
+                foreach ( $bolt_ids as $bo_id ) {
+                    $bo = RHCM_DB::get_bolt_on( $bo_id );
+                    if ( $bo ) {
+                        $monthly_price += RHCM_Paysuite::parsePrice( $bo['price'] ?? '' );
+                    }
+                }
                 if ( $monthly_price > 0 && $paysuite_id ) {
                     $paysuite->createContract(
                         $paysuite_id,
@@ -1407,6 +1413,10 @@ class RHCM_Shortcodes {
                             I instruct Queen Mary Sailing Club to set up a Direct Debit on this account and understand I have rights under the Direct Debit Guarantee.
                         </span>
                     </label>
+                </div>
+
+                <div id="rhcm-join-dd-confirm-error" style="display:none;color:#c0392b;font-size:.84rem;margin-bottom:14px;padding:10px 14px;background:#fff0f0;border-radius:6px;border:1px solid #f5c0c0">
+                    Please tick the box to confirm the Direct Debit instruction before continuing.
                 </div>
 
                 <div class="rhcm-join-nav">
