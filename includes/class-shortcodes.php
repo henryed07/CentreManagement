@@ -882,18 +882,23 @@ class RHCM_Shortcodes {
             wp_die( 'Security check failed.' );
         }
 
-        $first = sanitize_text_field( $_POST['first_name'] ?? '' );
-        $last  = sanitize_text_field( $_POST['last_name']  ?? '' );
-        $email = sanitize_email( $_POST['email'] ?? '' );
-        $cat   = sanitize_key( $_POST['category_key'] ?? '' );
+        $first         = sanitize_text_field( $_POST['first_name'] ?? '' );
+        $last          = sanitize_text_field( $_POST['last_name']  ?? '' );
+        $email         = sanitize_email( $_POST['email'] ?? '' );
+        $membership_id = (int) ( $_POST['category_key'] ?? 0 );
 
-        if ( ! $first || ! $last || ! is_email( $email ) || ! $cat ) {
+        if ( ! $first || ! $last || ! is_email( $email ) || ! $membership_id ) {
             wp_safe_redirect( add_query_arg( [ 'rhcm_join_error' => 'validation' ], wp_get_referer() ) );
             exit;
         }
 
-        $cats     = RHCM_DB::get_mem_categories();
-        $cat_name = isset( $cats[ $cat ] ) ? ( $cats[ $cat ]['label'] ?? $cat ) : $cat;
+        $membership = RHCM_DB::get_membership( $membership_id );
+        if ( ! $membership ) {
+            wp_safe_redirect( add_query_arg( [ 'rhcm_join_error' => 'validation' ], wp_get_referer() ) );
+            exit;
+        }
+        $cat      = $membership['mem_category'];
+        $cat_name = $membership['name'];
 
         $bolt_ids = [];
         if ( ! empty( $_POST['bolt_ons'] ) && is_array( $_POST['bolt_ons'] ) ) {
@@ -936,11 +941,13 @@ class RHCM_Shortcodes {
     }
 
     public function render_membership_join( array $atts ) {
-        $atts = shortcode_atts( [], $atts );
+        $atts       = shortcode_atts( [ 'category' => '' ], $atts );
+        $filter_cat = sanitize_text_field( $atts['category'] );
 
-        $cats     = RHCM_DB::get_mem_categories();
-        $active   = array_filter( $cats, fn( $c ) => (int) ( $c['is_active'] ?? 1 ) !== 0 );
-        uasort( $active, fn( $a, $b ) => (int) ( $a['sort_order'] ?? 0 ) <=> (int) ( $b['sort_order'] ?? 0 ) );
+        $memberships = RHCM_DB::get_memberships( true );
+        if ( $filter_cat ) {
+            $memberships = array_values( array_filter( $memberships, fn($m) => ( $m['mem_category'] ?? '' ) === $filter_cat ) );
+        }
 
         $bolt_ons = RHCM_DB::get_bolt_ons( true );
         $page_url = get_permalink();
@@ -992,20 +999,22 @@ class RHCM_Shortcodes {
 
                 <div class="rhcm-join-section-label">Membership Category</div>
                 <div class="rhcm-join-option-grid" id="rhcm-join-option-grid">
-                <?php foreach ( $active as $key => $cat ): ?>
-                    <div class="rhcm-join-option-card" data-key="<?= esc_attr( $key ) ?>" data-name="<?= esc_attr( $cat['label'] ?? $key ) ?>" data-price="<?= esc_attr( $cat['price'] ?? '' ) ?>">
+                <?php foreach ( $memberships as $m ):
+                    $m_price = trim( $m['price'] ?? '' );
+                    $m_freq  = trim( $m['frequency'] ?? '' );
+                ?>
+                    <div class="rhcm-join-option-card" data-key="<?= (int) $m['id'] ?>" data-name="<?= esc_attr( $m['name'] ) ?>" data-price="<?= esc_attr( $m_price ) ?>">
                         <div class="rhcm-join-option-header">
-                            <span class="rhcm-join-option-name"><?= esc_html( $cat['label'] ?? $key ) ?></span>
-                            <span class="rhcm-join-option-price"><?= esc_html( $cat['price'] ?? 'POA' )
-                                . ( ! empty( $cat['frequency'] ) ? '<small>' . esc_html( $cat['frequency'] ) . '</small>' : '' ) ?></span>
+                            <span class="rhcm-join-option-name"><?= esc_html( $m['name'] ) ?></span>
+                            <span class="rhcm-join-option-price"><?= esc_html( $m_price ?: 'POA' ) ?><?php if ( $m_freq ): ?><small><?= esc_html( $m_freq ) ?></small><?php endif; ?></span>
                         </div>
                         <div class="rhcm-join-option-body">
-                            <p><?= esc_html( $cat['tagline'] ?? '' ) ?></p>
+                            <?php if ( $m['tagline'] ): ?><p><?= esc_html( $m['tagline'] ) ?></p><?php endif; ?>
                         </div>
                     </div>
                 <?php endforeach; ?>
-                <?php if ( empty( $active ) ): ?>
-                    <p style="color:#6b7280">No membership categories available yet.</p>
+                <?php if ( empty( $memberships ) ): ?>
+                    <p style="color:#6b7280">No membership options found. Add them under <strong>Centre Management &rarr; Memberships</strong>.</p>
                 <?php endif; ?>
                 </div>
 

@@ -1294,11 +1294,10 @@
     flex-shrink: 0;
 }
 .rhcm-join-option-price small {
-    display: block;
-    font-size: .72rem;
-    font-weight: 500;
-    color: rgba(255,255,255,.6);
-    text-align: right;
+    display: inline;
+    font-size: .78rem;
+    font-weight: 600;
+    color: var(--rhcm-gold);
 }
 .rhcm-join-option-body {
     padding: 12px 18px 14px;
