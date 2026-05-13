@@ -1190,9 +1190,12 @@
 
 /* ── Membership Join [rhcm_membership_join] ───────────────────── */
 .rhcm-join {
-    max-width: 600px;
+    max-width: 560px;
     margin: 0 auto;
-    padding: 0 4px;
+    padding: 36px 32px;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(0,0,0,.12);
 }
 
 /* Stepper */
@@ -1201,7 +1204,7 @@
     align-items: center;
     justify-content: center;
     gap: 0;
-    margin-bottom: 40px;
+    margin-bottom: 36px;
 }
 .rhcm-join-step {
     display: flex;
@@ -1211,8 +1214,8 @@
     flex-shrink: 0;
 }
 .rhcm-join-step-circle {
-    width: 38px;
-    height: 38px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
     background: var(--rhcm-light);
     color: var(--rhcm-muted);
@@ -1225,11 +1228,11 @@
     border: 2px solid var(--rhcm-light);
 }
 .rhcm-join-step-label {
-    font-size: .72rem;
-    font-weight: 600;
+    font-size: .68rem;
+    font-weight: 700;
     color: var(--rhcm-muted);
     text-transform: uppercase;
-    letter-spacing: .07em;
+    letter-spacing: .08em;
     white-space: nowrap;
     transition: color .2s;
 }
@@ -1238,21 +1241,33 @@
     color: #fff;
     border-color: var(--rhcm-navy);
 }
-.rhcm-join-step.rhcm-join-step-active .rhcm-join-step-label { color: var(--rhcm-navy); }
+.rhcm-join-step.rhcm-join-step-active .rhcm-join-step-label {
+    color: var(--rhcm-navy);
+    font-weight: 700;
+}
 .rhcm-join-step.rhcm-join-step-done .rhcm-join-step-circle {
-    background: var(--rhcm-green);
-    color: #fff;
-    border-color: var(--rhcm-green);
+    background: var(--rhcm-gold);
+    color: var(--rhcm-navy);
+    border-color: var(--rhcm-gold);
+    font-size: 0; /* hide the number */
+}
+.rhcm-join-step.rhcm-join-step-done .rhcm-join-step-circle::after {
+    content: '✓';
+    font-size: 1rem;
+    font-weight: 700;
+}
+.rhcm-join-step.rhcm-join-step-done .rhcm-join-step-label {
+    color: var(--rhcm-gold);
 }
 .rhcm-join-connector {
     flex: 1;
     height: 2px;
     background: var(--rhcm-light);
-    margin: 0 10px;
-    margin-bottom: 26px;
+    margin: 0 8px;
+    margin-bottom: 28px;
     transition: background .2s;
 }
-.rhcm-join-connector.rhcm-join-done { background: var(--rhcm-green); }
+.rhcm-join-connector.rhcm-join-done { background: var(--rhcm-gold); }
 
 /* Panel headings */
 .rhcm-join-heading {
@@ -1471,4 +1486,5 @@
     .rhcm-day-num { font-size: .72rem; }
     .rhcm-modal-box { padding: 22px 16px; }
     .rhcm-mem-grid { grid-template-columns: 1fr; }
+    .rhcm-join { padding: 24px 18px; border-radius: 12px; }
 }

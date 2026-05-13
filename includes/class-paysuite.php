@@ -96,10 +96,10 @@ class RHCM_Paysuite {
 
     /**
      * Monthly DD collecting on the 21st.
+     * $monthlyPrice is passed directly as the collection amount (not divided by 12).
      * startDate is the 21st of this month, or next month if today is on/past the 21st.
      */
-    public static function buildContractPayload( string $membershipName, float $annualPrice ): array {
-        $monthly = round( $annualPrice / 12, 2 );
+    public static function buildContractPayload( string $membershipName, float $monthlyPrice ): array {
         $now = new \DateTime( 'today' );
         if ( (int) $now->format( 'j' ) >= 21 ) {
             $now->modify( 'first day of next month' );
@@ -110,7 +110,7 @@ class RHCM_Paysuite {
             'scheduleName'        => 'Monthly, every 1',
             'every'               => 1,
             'paymentDayInMonth'   => 21,
-            'amount'              => $monthly,
+            'amount'              => round( $monthlyPrice, 2 ),
             'terminationType'     => 'Until further notice',
             'isGiftAid'           => false,
             'additionalReference' => $membershipName,

@@ -618,7 +618,7 @@
             var el = document.getElementById('rhcm-join-monthly-amount');
             if (!el) return;
             if (state.catAnnual > 0) {
-                el.textContent = '£' + (state.catAnnual / 12).toFixed(2) + '/month';
+                el.textContent = '£' + state.catAnnual.toFixed(2) + '/month';
             } else {
                 el.textContent = 'To be confirmed';
             }

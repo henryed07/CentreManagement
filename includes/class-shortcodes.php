@@ -980,14 +980,14 @@ class RHCM_Shortcodes {
                 $paysuite_ref = $customer_resp['CustomerRef'] ?? RHCM_Paysuite::makeCustomerRef( $app_id );
                 $paysuite_id  = $customer_resp['Id'] ?? '';
 
-                $annual_price = RHCM_Paysuite::parsePrice( $membership['price'] ?? '' );
-                if ( $annual_price > 0 && $paysuite_id ) {
+                $monthly_price = RHCM_Paysuite::parsePrice( $membership['price'] ?? '' );
+                if ( $monthly_price > 0 && $paysuite_id ) {
                     $paysuite->createContract(
                         $paysuite_id,
-                        RHCM_Paysuite::buildContractPayload( $cat_name, $annual_price )
+                        RHCM_Paysuite::buildContractPayload( $cat_name, $monthly_price )
                     );
                     RHCM_DB::update_application_dd( $app_id, $paysuite_ref, $paysuite_id, 'active' );
-                    $dd_note = "\nDirect Debit: set up successfully (£" . number_format( round( $annual_price / 12, 2 ), 2 ) . '/month)';
+                    $dd_note = "\nDirect Debit: set up successfully (£" . number_format( $monthly_price, 2 ) . '/month)';
                 } else {
                     RHCM_DB::update_application_dd( $app_id, $paysuite_ref, $paysuite_id, 'pending' );
                     $dd_note = "\nDirect Debit: customer created; contract needs manual setup (price POA)";
@@ -1018,7 +1018,7 @@ class RHCM_Shortcodes {
             "Hi $first,\n\nThank you for your membership application!\n\nRef: $ref\nMembership: $cat_name" . ( $bolt_on_names ? "\nBolt-ons: $bolt_on_names" : '' ) . "\n\nWe'll be in touch shortly.\n\n" . get_bloginfo( 'name' )
         );
 
-        wp_safe_redirect( add_query_arg( [ 'rhcm_join_done' => 1, 'ref' => $ref ], get_permalink() ) );
+        wp_safe_redirect( add_query_arg( [ 'rhcm_join_done' => 1, 'ref' => $ref ], wp_get_referer() ) );
         exit;
     }
 
