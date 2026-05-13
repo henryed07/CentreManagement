@@ -501,6 +501,8 @@
         if (!join) return;
 
         var state = { step: 1, catKey: '', catName: '', catPrice: '', catAnnual: 0, boltOns: [] };
+        var ddEnabled = join.getAttribute('data-dd') === '1';
+        var accountStep = ddEnabled ? 5 : 4;
 
         function goToStep(n) {
             state.step = n;
@@ -523,7 +525,29 @@
             });
 
             if (n === 3) buildSummary();
-            if (n === 4) updateMonthlyAmount();
+            if (n === 4 && ddEnabled) updateMonthlyAmount();
+            if (n === accountStep) {
+                var emailEl = document.getElementById('rhcm-join-account-email');
+                var emailInput = document.getElementById('rhcm-join-email');
+                if (emailEl && emailInput) emailEl.textContent = emailInput.value || '(your email)';
+            }
+        }
+
+        // Client-side password match check on submit
+        var joinForm = document.getElementById('rhcm-join-form');
+        if (joinForm) {
+            joinForm.addEventListener('submit', function (e) {
+                var pw  = document.getElementById('rhcm-join-password');
+                var pwc = document.getElementById('rhcm-join-password-confirm');
+                var err = document.getElementById('rhcm-join-password-error');
+                if (pw && pwc && pw.value !== pwc.value) {
+                    e.preventDefault();
+                    if (err) err.style.display = 'block';
+                    if (pwc) pwc.focus();
+                } else if (err) {
+                    err.style.display = 'none';
+                }
+            });
         }
 
         function buildSummary() {

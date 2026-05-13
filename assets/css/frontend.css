@@ -1447,6 +1447,25 @@
 .rhcm-join-summary-label { color: var(--rhcm-muted); }
 .rhcm-join-summary-value { font-weight: 600; text-align: right; }
 
+/* Account creation panel */
+.rhcm-join-account-info {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--rhcm-offwhite);
+    border: 1px solid var(--rhcm-light);
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin-bottom: 24px;
+    font-size: .9rem;
+    color: var(--rhcm-navy);
+}
+.rhcm-join-account-email-label {
+    color: var(--rhcm-muted);
+    font-size: .84rem;
+    white-space: nowrap;
+}
+
 /* Confirmed state */
 .rhcm-join-confirmed {
     text-align: center;

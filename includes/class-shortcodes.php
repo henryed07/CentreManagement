@@ -948,6 +948,13 @@ class RHCM_Shortcodes {
             }
         }
 
+        // Validate password
+        $password = $_POST['password'] ?? '';
+        if ( strlen( $password ) < 8 || $password !== ( $_POST['password_confirm'] ?? '' ) ) {
+            wp_safe_redirect( add_query_arg( [ 'rhcm_join_error' => 'password' ], wp_get_referer() ) );
+            exit;
+        }
+
         // Create application record
         $result = RHCM_DB::create_application( [
             'category_key'  => $cat,
@@ -998,6 +1005,32 @@ class RHCM_Shortcodes {
             }
         }
 
+        // Create or link WordPress account
+        $paysuite_ref   = $paysuite_ref ?? '';
+        $account_status = 'none';
+        $account_note   = '';
+        $existing_user  = get_user_by( 'email', $email );
+        if ( $existing_user ) {
+            update_user_meta( $existing_user->ID, 'rhcm_membership_ref', $ref );
+            update_user_meta( $existing_user->ID, 'rhcm_membership_cat', $cat_name );
+            if ( $paysuite_ref ) update_user_meta( $existing_user->ID, 'rhcm_paysuite_ref', $paysuite_ref );
+            $account_status = 'exists';
+            $account_note   = "\nAccount: existing account linked (user ID: {$existing_user->ID})";
+        } else {
+            $user_id = wp_create_user( $email, $password, $email );
+            if ( is_wp_error( $user_id ) ) {
+                $account_status = 'error';
+                $account_note   = "\nAccount: creation failed — " . $user_id->get_error_message();
+            } else {
+                wp_update_user( [ 'ID' => $user_id, 'first_name' => $first, 'last_name' => $last, 'display_name' => "$first $last" ] );
+                update_user_meta( $user_id, 'rhcm_membership_ref', $ref );
+                update_user_meta( $user_id, 'rhcm_membership_cat', $cat_name );
+                if ( $paysuite_ref ) update_user_meta( $user_id, 'rhcm_paysuite_ref', $paysuite_ref );
+                $account_status = 'created';
+                $account_note   = "\nAccount: created (user ID: $user_id)";
+            }
+        }
+
         // Notify admin
         $bolt_on_names = '';
         if ( $bolt_ids ) {
@@ -1010,7 +1043,7 @@ class RHCM_Shortcodes {
         wp_mail(
             get_option( 'admin_email' ),
             'New Membership Application — ' . $ref,
-            "Ref: $ref\nName: $first $last\nEmail: $email\nCategory: $cat_name\nBolt-ons: " . ( $bolt_on_names ?: 'None' ) . $dd_note
+            "Ref: $ref\nName: $first $last\nEmail: $email\nCategory: $cat_name\nBolt-ons: " . ( $bolt_on_names ?: 'None' ) . $dd_note . $account_note
         );
         wp_mail(
             $email,
@@ -1018,7 +1051,7 @@ class RHCM_Shortcodes {
             "Hi $first,\n\nThank you for your membership application!\n\nRef: $ref\nMembership: $cat_name" . ( $bolt_on_names ? "\nBolt-ons: $bolt_on_names" : '' ) . "\n\nWe'll be in touch shortly.\n\n" . get_bloginfo( 'name' )
         );
 
-        wp_safe_redirect( add_query_arg( [ 'rhcm_join_done' => 1, 'ref' => $ref ], wp_get_referer() ) );
+        wp_safe_redirect( add_query_arg( [ 'rhcm_join_done' => 1, 'ref' => $ref, 'account' => $account_status ], wp_get_referer() ) );
         exit;
     }
 
@@ -1038,28 +1071,40 @@ class RHCM_Shortcodes {
 
         // Completed confirmation
         if ( ! empty( $_GET['rhcm_join_done'] ) ) {
-            $ref = esc_html( $_GET['ref'] ?? '' );
+            $ref            = esc_html( $_GET['ref'] ?? '' );
+            $account_status = sanitize_key( $_GET['account'] ?? '' );
             ?>
             <div class="rhcm-join-confirmed">
                 <div class="rhcm-join-confirmed-icon">&#10003;</div>
                 <h2>Application Received!</h2>
                 <p>Thank you — your membership application has been submitted. Reference: <strong><?= $ref ?></strong>.</p>
-                <p>We'll be in touch by email shortly to confirm your membership and arrange payment.</p>
+                <?php if ( $account_status === 'created' ): ?>
+                <p>Your member account has been created — you can <a href="<?= esc_url( wp_login_url() ) ?>">log in</a> with your email address at any time.</p>
+                <?php elseif ( $account_status === 'exists' ): ?>
+                <p>We found an existing account for your email and linked your membership to it. <a href="<?= esc_url( wp_login_url() ) ?>">Log in</a> to manage your membership.</p>
+                <?php else: ?>
+                <p>We'll be in touch by email shortly to confirm your membership.</p>
+                <?php endif; ?>
             </div>
             <?php
             return ob_get_clean();
         }
 
         if ( ! empty( $_GET['rhcm_join_error'] ) ) {
-            $err_msg = ( $_GET['rhcm_join_error'] === 'dd_validation' )
-                ? 'Please complete all Direct Debit fields and confirm the instruction before submitting.'
-                : 'Please complete all required fields and try again.';
+            $err_key = $_GET['rhcm_join_error'];
+            if ( $err_key === 'dd_validation' ) {
+                $err_msg = 'Please complete all Direct Debit fields and confirm the instruction before submitting.';
+            } elseif ( $err_key === 'password' ) {
+                $err_msg = 'Please choose a password of at least 8 characters and make sure both fields match.';
+            } else {
+                $err_msg = 'Please complete all required fields and try again.';
+            }
             echo '<div class="rhcm-notice rhcm-notice-error">' . esc_html( $err_msg ) . '</div>';
         }
 
         $dd_enabled = RHCM_Paysuite::is_enabled();
         ?>
-        <div class="rhcm-join" id="rhcm-join">
+        <div class="rhcm-join" id="rhcm-join" data-dd="<?= $dd_enabled ? '1' : '0' ?>">
 
             <!-- Progress stepper -->
             <div class="rhcm-join-stepper">
@@ -1082,6 +1127,17 @@ class RHCM_Shortcodes {
                 <div class="rhcm-join-step" data-step="4">
                     <div class="rhcm-join-step-circle">4</div>
                     <div class="rhcm-join-step-label">Direct Debit</div>
+                </div>
+                <div class="rhcm-join-connector"></div>
+                <div class="rhcm-join-step" data-step="5">
+                    <div class="rhcm-join-step-circle">5</div>
+                    <div class="rhcm-join-step-label">Account</div>
+                </div>
+                <?php else: ?>
+                <div class="rhcm-join-connector"></div>
+                <div class="rhcm-join-step" data-step="4">
+                    <div class="rhcm-join-step-circle">4</div>
+                    <div class="rhcm-join-step-label">Account</div>
                 </div>
                 <?php endif; ?>
             </div>
@@ -1153,20 +1209,18 @@ class RHCM_Shortcodes {
                 </div>
             </div>
 
-            <!-- Step 3: Your Details (+ step 4 DD when enabled, wrapped in one form) -->
-            <?php if ( $dd_enabled ): ?>
+            <!-- Steps 3–end: all wrapped in one form -->
             <form id="rhcm-join-form" method="POST" action="<?= esc_url( $page_url ) ?>">
                 <?php wp_nonce_field( 'rhcm_membership_join', 'rhcm_join_nonce' ); ?>
                 <input type="hidden" name="rhcm_join_submit" value="1">
                 <input type="hidden" name="category_key" id="rhcm-join-field-cat" value="">
                 <div id="rhcm-join-bolt-inputs"></div>
-            <?php endif; ?>
 
+            <!-- Step 3: Your Details -->
             <div class="rhcm-join-panel" id="rhcm-join-panel-3" style="display:none">
-                <h2 class="rhcm-join-heading"><?= $dd_enabled ? 'Your Details' : 'Review &amp; Submit' ?></h2>
+                <h2 class="rhcm-join-heading">Your Details</h2>
                 <p class="rhcm-join-subheading">Check your selection and fill in your details.</p>
 
-                <!-- Summary -->
                 <div class="rhcm-join-summary">
                     <div class="rhcm-join-summary-row rhcm-join-summary-main">
                         <span class="rhcm-join-summary-label">Membership</span>
@@ -1179,53 +1233,36 @@ class RHCM_Shortcodes {
                     <div id="rhcm-join-summary-bolt-rows"></div>
                 </div>
 
-                <?php if ( ! $dd_enabled ): ?>
-                <form id="rhcm-join-form" method="POST" action="<?= esc_url( $page_url ) ?>">
-                    <?php wp_nonce_field( 'rhcm_membership_join', 'rhcm_join_nonce' ); ?>
-                    <input type="hidden" name="rhcm_join_submit" value="1">
-                    <input type="hidden" name="category_key" id="rhcm-join-field-cat" value="">
-                    <div id="rhcm-join-bolt-inputs"></div>
-                <?php endif; ?>
-
-                    <h4 class="rhcm-section-title">Your Details</h4>
-
-                    <div class="rhcm-form-row">
-                        <div class="rhcm-field">
-                            <label for="rhcm-join-first">First Name *</label>
-                            <input type="text" id="rhcm-join-first" name="first_name" required autocomplete="given-name">
-                        </div>
-                        <div class="rhcm-field">
-                            <label for="rhcm-join-last">Last Name *</label>
-                            <input type="text" id="rhcm-join-last" name="last_name" required autocomplete="family-name">
-                        </div>
-                    </div>
-                    <div class="rhcm-form-row">
-                        <div class="rhcm-field">
-                            <label for="rhcm-join-email">Email Address *</label>
-                            <input type="email" id="rhcm-join-email" name="email" required autocomplete="email">
-                        </div>
-                        <div class="rhcm-field">
-                            <label for="rhcm-join-phone">Phone</label>
-                            <input type="tel" id="rhcm-join-phone" name="phone" autocomplete="tel" placeholder="07700 900123">
-                        </div>
+                <h4 class="rhcm-section-title">Your Details</h4>
+                <div class="rhcm-form-row">
+                    <div class="rhcm-field">
+                        <label for="rhcm-join-first">First Name *</label>
+                        <input type="text" id="rhcm-join-first" name="first_name" required autocomplete="given-name">
                     </div>
                     <div class="rhcm-field">
-                        <label for="rhcm-join-notes">Notes <span class="rhcm-label-hint">(optional)</span></label>
-                        <textarea id="rhcm-join-notes" name="notes" rows="3" placeholder="Any additional information…"></textarea>
+                        <label for="rhcm-join-last">Last Name *</label>
+                        <input type="text" id="rhcm-join-last" name="last_name" required autocomplete="family-name">
                     </div>
-
-                    <div class="rhcm-join-nav">
-                        <button type="button" class="rhcm-btn rhcm-btn-outline rhcm-join-back" data-to="2">&larr; Back</button>
-                        <?php if ( $dd_enabled ): ?>
-                        <button type="button" class="rhcm-btn rhcm-btn-primary rhcm-join-continue">Continue &rarr;</button>
-                        <?php else: ?>
-                        <button type="submit" class="rhcm-btn rhcm-btn-primary">Submit Application &rarr;</button>
-                        <?php endif; ?>
+                </div>
+                <div class="rhcm-form-row">
+                    <div class="rhcm-field">
+                        <label for="rhcm-join-email">Email Address *</label>
+                        <input type="email" id="rhcm-join-email" name="email" required autocomplete="email">
                     </div>
+                    <div class="rhcm-field">
+                        <label for="rhcm-join-phone">Phone</label>
+                        <input type="tel" id="rhcm-join-phone" name="phone" autocomplete="tel" placeholder="07700 900123">
+                    </div>
+                </div>
+                <div class="rhcm-field">
+                    <label for="rhcm-join-notes">Notes <span class="rhcm-label-hint">(optional)</span></label>
+                    <textarea id="rhcm-join-notes" name="notes" rows="3" placeholder="Any additional information…"></textarea>
+                </div>
 
-                <?php if ( ! $dd_enabled ): ?>
-                </form>
-                <?php endif; ?>
+                <div class="rhcm-join-nav">
+                    <button type="button" class="rhcm-btn rhcm-btn-outline rhcm-join-back" data-to="2">&larr; Back</button>
+                    <button type="button" class="rhcm-btn rhcm-btn-primary rhcm-join-continue">Continue &rarr;</button>
+                </div>
             </div><!-- #rhcm-join-panel-3 -->
 
             <?php if ( $dd_enabled ): ?>
@@ -1293,11 +1330,41 @@ class RHCM_Shortcodes {
 
                 <div class="rhcm-join-nav">
                     <button type="button" class="rhcm-btn rhcm-btn-outline rhcm-join-back" data-to="3">&larr; Back</button>
-                    <button type="submit" class="rhcm-btn rhcm-btn-primary">&#10003; Set Up Direct Debit &amp; Join</button>
+                    <button type="button" class="rhcm-btn rhcm-btn-primary rhcm-join-continue">Continue &rarr;</button>
                 </div>
             </div><!-- #rhcm-join-panel-4 -->
-            </form>
             <?php endif; ?>
+
+            <!-- Account creation: step 5 (DD) or step 4 (no DD) -->
+            <div class="rhcm-join-panel" id="rhcm-join-panel-<?= $dd_enabled ? '5' : '4' ?>" style="display:none">
+                <h2 class="rhcm-join-heading">Create Your Account</h2>
+                <p class="rhcm-join-subheading">Set a password so you can log in and manage your membership.</p>
+
+                <div class="rhcm-join-account-info">
+                    <span class="rhcm-join-account-email-label">Signing in as &nbsp;</span>
+                    <strong id="rhcm-join-account-email"></strong>
+                </div>
+
+                <div class="rhcm-field">
+                    <label for="rhcm-join-password">Password *</label>
+                    <input type="password" id="rhcm-join-password" name="password" required minlength="8" autocomplete="new-password">
+                    <span class="rhcm-label-hint" style="display:block;margin-top:4px;font-size:.78rem">Minimum 8 characters</span>
+                </div>
+                <div class="rhcm-field">
+                    <label for="rhcm-join-password-confirm">Confirm Password *</label>
+                    <input type="password" id="rhcm-join-password-confirm" name="password_confirm" required autocomplete="new-password">
+                </div>
+                <div id="rhcm-join-password-error" style="display:none;color:#c0392b;font-size:.84rem;margin-bottom:14px;padding:10px 14px;background:#fff0f0;border-radius:6px;border:1px solid #f5c0c0">
+                    Passwords do not match — please try again.
+                </div>
+
+                <div class="rhcm-join-nav">
+                    <button type="button" class="rhcm-btn rhcm-btn-outline rhcm-join-back" data-to="<?= $dd_enabled ? '4' : '3' ?>">&larr; Back</button>
+                    <button type="submit" class="rhcm-btn rhcm-btn-primary">&#10003; Create Account &amp; Join</button>
+                </div>
+            </div><!-- #rhcm-join-panel-account -->
+
+            </form>
 
         </div><!-- .rhcm-join -->
         <?php
