@@ -698,13 +698,17 @@
 }
 .rhcm-mem-featured .rhcm-mem-btn:hover { opacity: .88; color: var(--rhcm-navy); }
 
-/* ── [rhcm_mem_categories]: all cards get gold border + gold button ── */
+/* ── [rhcm_mem_categories]: gold border, larger price, gold button w/ border ── */
 .rhcm-mem-cat-grid .rhcm-mem-card {
     border-color: var(--rhcm-gold);
+}
+.rhcm-mem-cat-grid .rhcm-mem-price {
+    font-size: 3rem;
 }
 .rhcm-mem-cat-grid .rhcm-mem-btn {
     background: var(--rhcm-gold);
     color: var(--rhcm-navy);
+    border: 2px solid var(--rhcm-navy);
 }
 .rhcm-mem-cat-grid .rhcm-mem-btn:hover { opacity: .88; color: var(--rhcm-navy); }
 
