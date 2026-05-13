@@ -26,16 +26,116 @@ class RHCM_Admin {
 
     public function register_menus() {
         add_menu_page( 'Centre Management', 'Centre Management', 'manage_options', 'rhcm', [ $this, 'page_dashboard' ], 'dashicons-calendar-alt', 30 );
-        add_submenu_page( 'rhcm', 'Courses',  'Courses',  'manage_options', 'rhcm-courses',  [ $this, 'page_courses' ] );
-        add_submenu_page( 'rhcm', 'Sessions', 'Sessions', 'manage_options', 'rhcm-sessions', [ $this, 'page_sessions' ] );
-        add_submenu_page( 'rhcm', 'Bookings', 'Bookings', 'manage_options', 'rhcm-bookings', [ $this, 'page_bookings' ] );
-        add_submenu_page( 'rhcm', 'Memberships', 'Memberships', 'manage_options', 'rhcm-memberships', [ $this, 'page_memberships' ] );
-        add_submenu_page( 'rhcm', 'Membership Categories', 'Membership Categories', 'manage_options', 'rhcm-mem-categories', [ $this, 'page_mem_categories' ] );
-        add_submenu_page( 'rhcm', 'Discount Codes', 'Discount Codes', 'manage_options', 'rhcm-discounts', [ $this, 'page_discounts' ] );
-        add_submenu_page( 'rhcm', 'Bolt-ons', 'Bolt-ons', 'manage_options', 'rhcm-bolt-ons', [ $this, 'page_bolt_ons' ] );
-        add_submenu_page( 'rhcm', 'Applications', 'Applications', 'manage_options', 'rhcm-applications', [ $this, 'page_applications' ] );
-        add_submenu_page( 'rhcm', 'Category Images', 'Category Images', 'manage_options', 'rhcm-category-images', [ $this, 'page_category_images' ] );
-        add_submenu_page( 'rhcm', 'Shortcodes &amp; Help', 'Shortcodes &amp; Help', 'manage_options', 'rhcm-settings', [ $this, 'page_settings' ] );
+        add_submenu_page( 'rhcm', 'Courses',    'Courses',    'manage_options', 'rhcm-courses',    [ $this, 'page_courses_tabbed' ] );
+        add_submenu_page( 'rhcm', 'Membership', 'Membership', 'manage_options', 'rhcm-membership', [ $this, 'page_membership_tabbed' ] );
+        add_submenu_page( 'rhcm', 'Bookings',   'Bookings',   'manage_options', 'rhcm-bookings',   [ $this, 'page_bookings' ] );
+        // Hidden pages — accessible via direct URL but not listed in the sidebar
+        add_submenu_page( 'rhcm-hidden', 'Discount Codes',  '', 'manage_options', 'rhcm-discounts',       [ $this, 'page_discounts' ] );
+        add_submenu_page( 'rhcm-hidden', 'Category Images', '', 'manage_options', 'rhcm-category-images', [ $this, 'page_category_images' ] );
+        add_submenu_page( 'rhcm-hidden', 'Help',            '', 'manage_options', 'rhcm-settings',        [ $this, 'page_settings' ] );
+    }
+
+    // ── Tab nav helpers ───────────────────────────────────────────────────────
+
+    private function render_tab_nav_courses( string $active ) {
+        $tabs = [ 'courses' => 'Courses', 'sessions' => 'Sessions' ];
+        echo '<nav class="nav-tab-wrapper" style="margin-bottom:16px">';
+        foreach ( $tabs as $slug => $label ) {
+            printf(
+                '<a href="%s" class="nav-tab%s">%s</a>',
+                esc_url( admin_url( 'admin.php?page=rhcm-courses&tab=' . $slug ) ),
+                $slug === $active ? ' nav-tab-active' : '',
+                esc_html( $label )
+            );
+        }
+        echo '</nav>';
+    }
+
+    private function render_tab_nav_membership( string $active ) {
+        $tabs = [
+            'memberships'  => 'Memberships',
+            'categories'   => 'Membership Categories',
+            'boltons'      => 'Bolt-ons',
+            'applications' => 'Applications',
+        ];
+        echo '<nav class="nav-tab-wrapper" style="margin-bottom:16px">';
+        foreach ( $tabs as $slug => $label ) {
+            printf(
+                '<a href="%s" class="nav-tab%s">%s</a>',
+                esc_url( admin_url( 'admin.php?page=rhcm-membership&tab=' . $slug ) ),
+                $slug === $active ? ' nav-tab-active' : '',
+                esc_html( $label )
+            );
+        }
+        echo '</nav>';
+    }
+
+    // ── Tabbed page dispatchers ───────────────────────────────────────────────
+
+    public function page_courses_tabbed() {
+        $tab    = sanitize_key( $_GET['tab']    ?? 'courses' );
+        $action = sanitize_key( $_GET['action'] ?? 'list' );
+        $id     = (int) ( $_GET['id'] ?? 0 );
+        $notice = $_GET['notice'] ?? '';
+
+        if ( $tab === 'sessions' ) {
+            if ( $action === 'edit' || $action === 'new' ) {
+                $session = $id ? RHCM_DB::get_session( $id ) : [];
+                if ( ! $id && ! empty( $_GET['course_id'] ) ) {
+                    $session['course_id'] = (int) $_GET['course_id'];
+                }
+                $this->render_session_form( $session, $notice );
+            } else {
+                $this->render_session_list( $notice );
+            }
+        } else {
+            if ( $action === 'edit' || $action === 'new' ) {
+                $course = $id ? RHCM_DB::get_course( $id ) : [];
+                $this->render_course_form( $course, $notice );
+            } else {
+                $this->render_course_list( $notice );
+            }
+        }
+    }
+
+    public function page_membership_tabbed() {
+        $tab    = sanitize_key( $_GET['tab']    ?? 'memberships' );
+        $action = sanitize_key( $_GET['action'] ?? 'list' );
+        $id     = (int) ( $_GET['id'] ?? 0 );
+        $notice = $_GET['notice'] ?? '';
+
+        if ( $tab === 'categories' ) {
+            $key  = sanitize_key( $_GET['key'] ?? '' );
+            $cats = RHCM_DB::get_mem_categories();
+            if ( $action === 'edit' ) {
+                $cat = $cats[ $key ] ?? null;
+                if ( $cat === null ) {
+                    echo '<div class="wrap"><p>Category not found. <a href="' . esc_url( admin_url( 'admin.php?page=rhcm-membership&tab=categories' ) ) . '">&larr; Back</a></p></div>';
+                    return;
+                }
+                $this->render_mem_category_form( $key, $cat, $notice );
+            } elseif ( $action === 'new' ) {
+                $this->render_mem_category_form( '', [], $notice );
+            } else {
+                $this->render_mem_category_list( $cats, $notice );
+            }
+        } elseif ( $tab === 'boltons' ) {
+            if ( $action === 'edit' || $action === 'new' ) {
+                $b = $id ? RHCM_DB::get_bolt_on( $id ) : [];
+                $this->render_bolt_on_form( $b, $notice );
+            } else {
+                $this->render_bolt_on_list( $notice );
+            }
+        } elseif ( $tab === 'applications' ) {
+            $this->page_applications();
+        } else {
+            if ( $action === 'edit' || $action === 'new' ) {
+                $m = $id ? RHCM_DB::get_membership( $id ) : [];
+                $this->render_membership_form( $m, $notice );
+            } else {
+                $this->render_membership_list( $notice );
+            }
+        }
     }
 
     public function enqueue( $hook ) {
@@ -105,8 +205,9 @@ class RHCM_Admin {
         $courses = RHCM_DB::get_courses();
         ?>
         <div class="wrap rhcm-wrap">
+        <?php $this->render_tab_nav_courses( 'courses' ); ?>
         <h1 class="wp-heading-inline">Courses</h1>
-        <a href="<?= esc_url( admin_url( 'admin.php?page=rhcm-courses&action=new' ) ) ?>" class="page-title-action">Add New</a>
+        <a href="<?= esc_url( admin_url( 'admin.php?page=rhcm-courses&tab=courses&action=new' ) ) ?>" class="page-title-action">Add New</a>
         <?php if ( $notice === 'saved' ):   ?><div class="notice notice-success is-dismissible"><p>Course saved.</p></div><?php endif; ?>
         <?php if ( $notice === 'deleted' ): ?><div class="notice notice-success is-dismissible"><p>Course deleted.</p></div><?php endif; ?>
 
@@ -145,8 +246,9 @@ class RHCM_Admin {
         $labels   = RHCM_DB::category_labels();
         ?>
         <div class="wrap rhcm-wrap">
+        <?php $this->render_tab_nav_courses( 'courses' ); ?>
         <h1><?= $id ? 'Edit Course' : 'Add Course' ?></h1>
-        <a href="<?= esc_url( admin_url( 'admin.php?page=rhcm-courses' ) ) ?>">&larr; Back to Courses</a>
+        <a href="<?= esc_url( admin_url( 'admin.php?page=rhcm-courses&tab=courses' ) ) ?>">&larr; Back to Courses</a>
         <?php if ( $notice === 'saved' ): ?><div class="notice notice-success is-dismissible"><p>Course saved.</p></div><?php endif; ?>
 
         <form method="POST" action="<?= esc_url( admin_url( 'admin-post.php' ) ) ?>" class="rhcm-form">
@@ -258,7 +360,7 @@ class RHCM_Admin {
         check_admin_referer( 'rhcm_save_course', 'rhcm_nonce' );
         if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Unauthorised' );
         $id = RHCM_DB::save_course( $_POST, (int) ( $_POST['id'] ?? 0 ) );
-        wp_redirect( admin_url( 'admin.php?page=rhcm-courses&action=edit&id=' . $id . '&notice=saved' ) );
+        wp_redirect( admin_url( 'admin.php?page=rhcm-courses&tab=courses&action=edit&id=' . $id . '&notice=saved' ) );
         exit;
     }
 
@@ -267,7 +369,7 @@ class RHCM_Admin {
         check_admin_referer( 'rhcm_delete_course_' . $id );
         if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Unauthorised' );
         RHCM_DB::delete_course( $id );
-        wp_redirect( admin_url( 'admin.php?page=rhcm-courses&notice=deleted' ) );
+        wp_redirect( admin_url( 'admin.php?page=rhcm-courses&tab=courses&notice=deleted' ) );
         exit;
     }
 
@@ -306,9 +408,10 @@ class RHCM_Admin {
                 FROM $ts s JOIN $tc c ON s.course_id = c.id $where ORDER BY s.start_date DESC LIMIT 100";
         $sessions = $params ? $wpdb->get_results( $wpdb->prepare( $sql, $params ), ARRAY_A ) : $wpdb->get_results( $sql, ARRAY_A );
 
-        $new_url = admin_url( 'admin.php?page=rhcm-sessions&action=new' . ( $course_filter ? '&course_id=' . $course_filter : '' ) );
+        $new_url = admin_url( 'admin.php?page=rhcm-courses&tab=sessions&action=new' . ( $course_filter ? '&course_id=' . $course_filter : '' ) );
         ?>
         <div class="wrap rhcm-wrap">
+        <?php $this->render_tab_nav_courses( 'sessions' ); ?>
         <h1 class="wp-heading-inline">Sessions</h1>
         <a href="<?= esc_url( $new_url ) ?>" class="page-title-action">Add New</a>
         <?php if ( $notice === 'saved' ):   ?><div class="notice notice-success is-dismissible"><p>Session saved.</p></div><?php endif; ?>
@@ -328,7 +431,7 @@ class RHCM_Admin {
                 <td><?= esc_html( $s['enrolled'] ) ?></td>
                 <td><?= $s['is_active'] ? '&#10003;' : '&mdash;' ?></td>
                 <td>
-                    <a href="<?= esc_url( admin_url( 'admin.php?page=rhcm-sessions&action=edit&id=' . $s['id'] ) ) ?>">Edit</a>
+                    <a href="<?= esc_url( admin_url( 'admin.php?page=rhcm-courses&tab=sessions&action=edit&id=' . $s['id'] ) ) ?>">Edit</a>
                     &nbsp;|&nbsp;
                     <a href="<?= esc_url( admin_url( 'admin.php?page=rhcm-bookings&session_id=' . $s['id'] ) ) ?>">Bookings (<?= (int) $s['enrolled'] ?>)</a>
                     &nbsp;|&nbsp;
@@ -349,8 +452,9 @@ class RHCM_Admin {
         $courses = RHCM_DB::get_courses( [ 'is_active' => 1 ] );
         ?>
         <div class="wrap rhcm-wrap">
+        <?php $this->render_tab_nav_courses( 'sessions' ); ?>
         <h1><?= $id ? 'Edit Session' : 'Add Session' ?></h1>
-        <a href="<?= esc_url( admin_url( 'admin.php?page=rhcm-sessions' ) ) ?>">&larr; Back to Sessions</a>
+        <a href="<?= esc_url( admin_url( 'admin.php?page=rhcm-courses&tab=sessions' ) ) ?>">&larr; Back to Sessions</a>
         <?php if ( $notice === 'saved' ): ?><div class="notice notice-success is-dismissible"><p>Session saved.</p></div><?php endif; ?>
 
         <form method="POST" action="<?= esc_url( admin_url( 'admin-post.php' ) ) ?>" class="rhcm-form">
@@ -404,7 +508,7 @@ class RHCM_Admin {
         // If end_date blank, default to start_date
         if ( empty( $_POST['end_date'] ) ) $_POST['end_date'] = $_POST['start_date'];
         $id = RHCM_DB::save_session( $_POST, (int) ( $_POST['id'] ?? 0 ) );
-        wp_redirect( admin_url( 'admin.php?page=rhcm-sessions&action=edit&id=' . $id . '&notice=saved' ) );
+        wp_redirect( admin_url( 'admin.php?page=rhcm-courses&tab=sessions&action=edit&id=' . $id . '&notice=saved' ) );
         exit;
     }
 
@@ -413,7 +517,7 @@ class RHCM_Admin {
         check_admin_referer( 'rhcm_delete_session_' . $id );
         if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Unauthorised' );
         RHCM_DB::delete_session( $id );
-        wp_redirect( admin_url( 'admin.php?page=rhcm-sessions&notice=deleted' ) );
+        wp_redirect( admin_url( 'admin.php?page=rhcm-courses&tab=sessions&notice=deleted' ) );
         exit;
     }
 
@@ -544,7 +648,7 @@ class RHCM_Admin {
                         <?php endforeach; ?>
                     </select>
                     <?php if ( empty( $sessions ) ): ?>
-                    <p style="color:#c0392b;font-size:.82rem;margin-top:4px">No upcoming sessions found. <a href="<?= esc_url( admin_url( 'admin.php?page=rhcm-sessions&action=new' ) ) ?>">Add a session first.</a></p>
+                    <p style="color:#c0392b;font-size:.82rem;margin-top:4px">No upcoming sessions found. <a href="<?= esc_url( admin_url( 'admin.php?page=rhcm-courses&tab=sessions&action=new' ) ) ?>">Add a session first.</a></p>
                     <?php endif; ?>
                 </div>
 
@@ -679,8 +783,9 @@ class RHCM_Admin {
         $memberships = RHCM_DB::get_memberships();
         ?>
         <div class="wrap rhcm-wrap">
+        <?php $this->render_tab_nav_membership( 'memberships' ); ?>
         <h1 class="wp-heading-inline">Memberships</h1>
-        <a href="<?= esc_url( admin_url('admin.php?page=rhcm-memberships&action=new') ) ?>" class="page-title-action">Add New</a>
+        <a href="<?= esc_url( admin_url('admin.php?page=rhcm-membership&tab=memberships&action=new') ) ?>" class="page-title-action">Add New</a>
         <?php if ( $notice === 'saved' ):   ?><div class="notice notice-success is-dismissible"><p>Membership saved.</p></div><?php endif; ?>
         <?php if ( $notice === 'deleted' ): ?><div class="notice notice-success is-dismissible"><p>Membership deleted.</p></div><?php endif; ?>
         <p style="color:#6b7280;margin:12px 0 4px">Display on your site with the shortcode <code>[rhcm_memberships]</code></p>
@@ -697,14 +802,14 @@ class RHCM_Admin {
                 <td><?= $m['is_popular'] ? '<span style="color:#c8a84b;font-weight:700">&#9733; Yes</span>' : '&mdash;' ?></td>
                 <td><?= $m['is_active'] ? '&#10003;' : '&mdash;' ?></td>
                 <td>
-                    <a href="<?= esc_url( admin_url('admin.php?page=rhcm-memberships&action=edit&id=' . $m['id']) ) ?>">Edit</a>
+                    <a href="<?= esc_url( admin_url('admin.php?page=rhcm-membership&tab=memberships&action=edit&id=' . $m['id']) ) ?>">Edit</a>
                     &nbsp;|&nbsp;
                     <a href="<?= esc_url( wp_nonce_url( admin_url('admin-post.php?action=rhcm_delete_membership&id=' . $m['id']), 'rhcm_delete_membership_' . $m['id'] ) ) ?>"
                        onclick="return confirm('Delete this membership option?')" style="color:#c0392b">Delete</a>
                 </td>
             </tr>
             <?php endforeach; ?>
-            <?php if ( empty( $memberships ) ): ?><tr><td colspan="8">No memberships yet. <a href="<?= esc_url( admin_url('admin.php?page=rhcm-memberships&action=new') ) ?>">Add one</a>.</td></tr><?php endif; ?>
+            <?php if ( empty( $memberships ) ): ?><tr><td colspan="8">No memberships yet. <a href="<?= esc_url( admin_url('admin.php?page=rhcm-membership&tab=memberships&action=new') ) ?>">Add one</a>.</td></tr><?php endif; ?>
             </tbody>
         </table>
         </div>
@@ -717,8 +822,9 @@ class RHCM_Admin {
         $has_img  = ! empty( $m['image_url'] );
         ?>
         <div class="wrap rhcm-wrap">
+        <?php $this->render_tab_nav_membership( 'memberships' ); ?>
         <h1><?= $id ? 'Edit Membership' : 'Add Membership' ?></h1>
-        <a href="<?= esc_url( admin_url('admin.php?page=rhcm-memberships') ) ?>">&larr; Back to Memberships</a>
+        <a href="<?= esc_url( admin_url('admin.php?page=rhcm-membership&tab=memberships') ) ?>">&larr; Back to Memberships</a>
         <?php if ( $notice === 'saved' ): ?><div class="notice notice-success is-dismissible"><p>Membership saved.</p></div><?php endif; ?>
 
         <form method="POST" action="<?= esc_url( admin_url('admin-post.php') ) ?>" class="rhcm-form">
@@ -740,7 +846,7 @@ class RHCM_Admin {
                         <?php endforeach; ?>
                     </select>
                     <?php if ( empty( $mem_cats ) ): ?>
-                    <small style="color:#6b7280">No categories yet. <a href="<?= esc_url( admin_url('admin.php?page=rhcm-mem-categories') ) ?>">Create some</a>.</small>
+                    <small style="color:#6b7280">No categories yet. <a href="<?= esc_url( admin_url('admin.php?page=rhcm-membership&tab=categories') ) ?>">Create some</a>.</small>
                     <?php endif; ?>
                 </div>
                 <div class="rhcm-field rhcm-field-full">
@@ -799,7 +905,7 @@ class RHCM_Admin {
         check_admin_referer( 'rhcm_save_membership', 'rhcm_nonce' );
         if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Unauthorised' );
         $id = RHCM_DB::save_membership( $_POST, (int) ( $_POST['id'] ?? 0 ) );
-        wp_redirect( admin_url( 'admin.php?page=rhcm-memberships&action=edit&id=' . $id . '&notice=saved' ) );
+        wp_redirect( admin_url( 'admin.php?page=rhcm-membership&tab=memberships&action=edit&id=' . $id . '&notice=saved' ) );
         exit;
     }
 
@@ -808,7 +914,7 @@ class RHCM_Admin {
         check_admin_referer( 'rhcm_delete_membership_' . $id );
         if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Unauthorised' );
         RHCM_DB::delete_membership( $id );
-        wp_redirect( admin_url( 'admin.php?page=rhcm-memberships&notice=deleted' ) );
+        wp_redirect( admin_url( 'admin.php?page=rhcm-membership&tab=memberships&notice=deleted' ) );
         exit;
     }
 
@@ -838,8 +944,9 @@ class RHCM_Admin {
         uasort( $cats, fn( $a, $b ) => (int) ( $a['sort_order'] ?? 0 ) <=> (int) ( $b['sort_order'] ?? 0 ) );
         ?>
         <div class="wrap rhcm-wrap">
+        <?php $this->render_tab_nav_membership( 'categories' ); ?>
         <h1 class="wp-heading-inline">Membership Categories</h1>
-        <a href="<?= esc_url( admin_url('admin.php?page=rhcm-mem-categories&action=new') ) ?>" class="page-title-action">Add New</a>
+        <a href="<?= esc_url( admin_url('admin.php?page=rhcm-membership&tab=categories&action=new') ) ?>" class="page-title-action">Add New</a>
         <?php if ( $notice === 'saved' ):   ?><div class="notice notice-success is-dismissible"><p>Category saved.</p></div><?php endif; ?>
         <?php if ( $notice === 'deleted' ): ?><div class="notice notice-success is-dismissible"><p>Category deleted.</p></div><?php endif; ?>
         <p style="color:#6b7280;margin:12px 0 4px">Display on your site with <code>[rhcm_mem_categories]</code>. Show individual memberships within a category using <code>[rhcm_memberships category="key" layout="tiles"]</code>.</p>
@@ -847,7 +954,7 @@ class RHCM_Admin {
             <thead><tr><th style="width:60px">Order</th><th style="width:50px">Icon</th><th style="width:120px">Key / Slug</th><th>Name</th><th>Tagline</th><th style="width:70px">Popular</th><th style="width:60px">Active</th><th style="width:100px">Actions</th></tr></thead>
             <tbody>
             <?php if ( empty( $cats ) ): ?>
-            <tr><td colspan="8">No categories yet. <a href="<?= esc_url( admin_url('admin.php?page=rhcm-mem-categories&action=new') ) ?>">Add one</a>.</td></tr>
+            <tr><td colspan="8">No categories yet. <a href="<?= esc_url( admin_url('admin.php?page=rhcm-membership&tab=categories&action=new') ) ?>">Add one</a>.</td></tr>
             <?php else: ?>
             <?php foreach ( $cats as $key => $cat ): ?>
             <tr>
@@ -859,7 +966,7 @@ class RHCM_Admin {
                 <td><?= ! empty( $cat['is_popular'] ) ? '<span style="color:#c8a84b;font-weight:700">&#9733; Yes</span>' : '&mdash;' ?></td>
                 <td><?= ! empty( $cat['is_active'] ) || ! isset( $cat['is_active'] ) ? '&#10003;' : '&mdash;' ?></td>
                 <td>
-                    <a href="<?= esc_url( admin_url('admin.php?page=rhcm-mem-categories&action=edit&key=' . urlencode( $key )) ) ?>">Edit</a>
+                    <a href="<?= esc_url( admin_url('admin.php?page=rhcm-membership&tab=categories&action=edit&key=' . urlencode( $key )) ) ?>">Edit</a>
                     &nbsp;|&nbsp;
                     <a href="<?= esc_url( wp_nonce_url( admin_url('admin-post.php?action=rhcm_delete_mem_category&key=' . urlencode( $key )), 'rhcm_delete_mem_category_' . $key ) ) ?>"
                        onclick="return confirm('Delete this category?')" style="color:#c0392b">Delete</a>
@@ -878,8 +985,9 @@ class RHCM_Admin {
         $has_img = ! empty( $cat['image_url'] );
         ?>
         <div class="wrap rhcm-wrap">
+        <?php $this->render_tab_nav_membership( 'categories' ); ?>
         <h1><?= $is_new ? 'Add Membership Category' : 'Edit Membership Category' ?></h1>
-        <a href="<?= esc_url( admin_url('admin.php?page=rhcm-mem-categories') ) ?>">&larr; Back to Membership Categories</a>
+        <a href="<?= esc_url( admin_url('admin.php?page=rhcm-membership&tab=categories') ) ?>">&larr; Back to Membership Categories</a>
         <?php if ( $notice === 'saved' ): ?><div class="notice notice-success is-dismissible"><p>Category saved.</p></div><?php endif; ?>
 
         <form method="POST" action="<?= esc_url( admin_url('admin-post.php') ) ?>" class="rhcm-form">
@@ -965,7 +1073,7 @@ class RHCM_Admin {
         $key          = $is_new ? sanitize_key( $_POST['key'] ?? '' ) : $original_key;
 
         if ( ! $key ) {
-            wp_redirect( admin_url( 'admin.php?page=rhcm-mem-categories&notice=error' ) );
+            wp_redirect( admin_url( 'admin.php?page=rhcm-membership&tab=categories&notice=error' ) );
             exit;
         }
 
@@ -985,7 +1093,7 @@ class RHCM_Admin {
         ];
 
         RHCM_DB::save_mem_categories( $cats );
-        wp_redirect( admin_url( 'admin.php?page=rhcm-mem-categories&action=edit&key=' . urlencode( $key ) . '&notice=saved' ) );
+        wp_redirect( admin_url( 'admin.php?page=rhcm-membership&tab=categories&action=edit&key=' . urlencode( $key ) . '&notice=saved' ) );
         exit;
     }
 
@@ -997,7 +1105,7 @@ class RHCM_Admin {
         $cats = RHCM_DB::get_mem_categories();
         unset( $cats[ $key ] );
         RHCM_DB::save_mem_categories( $cats );
-        wp_redirect( admin_url( 'admin.php?page=rhcm-mem-categories&notice=deleted' ) );
+        wp_redirect( admin_url( 'admin.php?page=rhcm-membership&tab=categories&notice=deleted' ) );
         exit;
     }
 
@@ -1794,8 +1902,9 @@ class RHCM_Admin {
         $bolt_ons = RHCM_DB::get_bolt_ons();
         ?>
         <div class="wrap rhcm-wrap">
+        <?php $this->render_tab_nav_membership( 'boltons' ); ?>
         <h1 class="wp-heading-inline">Bolt-ons</h1>
-        <a href="<?= esc_url( admin_url('admin.php?page=rhcm-bolt-ons&action=new') ) ?>" class="page-title-action">Add New</a>
+        <a href="<?= esc_url( admin_url('admin.php?page=rhcm-membership&tab=boltons&action=new') ) ?>" class="page-title-action">Add New</a>
         <p style="color:#6b7280;margin:12px 0 16px">Add-ons that members can include with their membership during the join flow.</p>
         <?php if ( $notice === 'saved' ):   ?><div class="notice notice-success is-dismissible"><p>Bolt-on saved.</p></div><?php endif; ?>
         <?php if ( $notice === 'deleted' ): ?><div class="notice notice-success is-dismissible"><p>Bolt-on deleted.</p></div><?php endif; ?>
@@ -1811,7 +1920,7 @@ class RHCM_Admin {
                 <td><?= esc_html( $b['price'] ) ?><?= $b['frequency'] ? ' <small style="color:#6b7280">' . esc_html( $b['frequency'] ) . '</small>' : '' ?></td>
                 <td><?= $b['is_active'] ? '&#10003;' : '&mdash;' ?></td>
                 <td>
-                    <a href="<?= esc_url( admin_url('admin.php?page=rhcm-bolt-ons&action=edit&id=' . $b['id']) ) ?>">Edit</a>
+                    <a href="<?= esc_url( admin_url('admin.php?page=rhcm-membership&tab=boltons&action=edit&id=' . $b['id']) ) ?>">Edit</a>
                     &nbsp;|&nbsp;
                     <a href="<?= esc_url( wp_nonce_url( admin_url('admin-post.php?action=rhcm_delete_bolt_on&id=' . $b['id']), 'rhcm_delete_bolt_on_' . $b['id'] ) ) ?>"
                        onclick="return confirm('Delete this bolt-on?')" style="color:#c0392b">Delete</a>
@@ -1819,7 +1928,7 @@ class RHCM_Admin {
             </tr>
             <?php endforeach; ?>
             <?php if ( empty( $bolt_ons ) ): ?>
-            <tr><td colspan="6">No bolt-ons yet. <a href="<?= esc_url( admin_url('admin.php?page=rhcm-bolt-ons&action=new') ) ?>">Add one</a>.</td></tr>
+            <tr><td colspan="6">No bolt-ons yet. <a href="<?= esc_url( admin_url('admin.php?page=rhcm-membership&tab=boltons&action=new') ) ?>">Add one</a>.</td></tr>
             <?php endif; ?>
             </tbody>
         </table>
@@ -1831,8 +1940,9 @@ class RHCM_Admin {
         $id = (int) ( $b['id'] ?? 0 );
         ?>
         <div class="wrap rhcm-wrap">
+        <?php $this->render_tab_nav_membership( 'boltons' ); ?>
         <h1><?= $id ? 'Edit Bolt-on' : 'Add Bolt-on' ?></h1>
-        <a href="<?= esc_url( admin_url('admin.php?page=rhcm-bolt-ons') ) ?>">&larr; Back to Bolt-ons</a>
+        <a href="<?= esc_url( admin_url('admin.php?page=rhcm-membership&tab=boltons') ) ?>">&larr; Back to Bolt-ons</a>
         <?php if ( $notice === 'saved' ): ?><div class="notice notice-success is-dismissible" style="margin-top:12px"><p>Bolt-on saved.</p></div><?php endif; ?>
 
         <form method="POST" action="<?= esc_url( admin_url('admin-post.php') ) ?>" class="rhcm-form">
@@ -1875,7 +1985,7 @@ class RHCM_Admin {
         check_admin_referer( 'rhcm_save_bolt_on', 'rhcm_nonce' );
         if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Unauthorised' );
         $id = RHCM_DB::save_bolt_on( $_POST, (int) ( $_POST['id'] ?? 0 ) );
-        wp_redirect( admin_url( 'admin.php?page=rhcm-bolt-ons&action=edit&id=' . $id . '&notice=saved' ) );
+        wp_redirect( admin_url( 'admin.php?page=rhcm-membership&tab=boltons&action=edit&id=' . $id . '&notice=saved' ) );
         exit;
     }
 
@@ -1884,7 +1994,7 @@ class RHCM_Admin {
         check_admin_referer( 'rhcm_delete_bolt_on_' . $id );
         if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Unauthorised' );
         RHCM_DB::delete_bolt_on( $id );
-        wp_redirect( admin_url( 'admin.php?page=rhcm-bolt-ons&notice=deleted' ) );
+        wp_redirect( admin_url( 'admin.php?page=rhcm-membership&tab=boltons&notice=deleted' ) );
         exit;
     }
 
@@ -1897,6 +2007,7 @@ class RHCM_Admin {
         $status_colors = [ 'pending' => '#b45309', 'approved' => '#166534', 'rejected' => '#991b1b' ];
         ?>
         <div class="wrap rhcm-wrap">
+        <?php $this->render_tab_nav_membership( 'applications' ); ?>
         <h1>Membership Applications</h1>
         <p style="color:#6b7280;margin:0 0 16px">Applications submitted via the <code>[rhcm_membership_join]</code> shortcode.</p>
         <?php if ( $notice === 'updated' ): ?><div class="notice notice-success is-dismissible"><p>Status updated.</p></div><?php endif; ?>
@@ -1951,7 +2062,7 @@ class RHCM_Admin {
         if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Unauthorised' );
         $status = in_array( $_POST['status'] ?? '', [ 'pending', 'approved', 'rejected' ] ) ? $_POST['status'] : 'pending';
         RHCM_DB::update_application_status( $id, $status );
-        wp_redirect( admin_url( 'admin.php?page=rhcm-applications&notice=updated' ) );
+        wp_redirect( admin_url( 'admin.php?page=rhcm-membership&tab=applications&notice=updated' ) );
         exit;
     }
 
