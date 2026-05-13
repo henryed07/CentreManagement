@@ -971,13 +971,13 @@ class RHCM_Shortcodes {
             try {
                 $paysuite        = new RHCM_Paysuite();
                 $customer_resp   = $paysuite->createCustomer(
-                    RHCM_Paysuite::buildCustomerPayload( $app_id, array_merge( $dd_fields, [
+                    RHCM_Paysuite::buildCustomerPayload( $ref, array_merge( $dd_fields, [
                         'first_name' => $first,
                         'last_name'  => $last,
                         'email'      => $email,
                     ] ) )
                 );
-                $paysuite_ref = $customer_resp['CustomerRef'] ?? RHCM_Paysuite::makeCustomerRef( $app_id );
+                $paysuite_ref = $customer_resp['CustomerRef'] ?? $ref;
                 $paysuite_id  = $customer_resp['Id'] ?? '';
 
                 $monthly_price = RHCM_Paysuite::parsePrice( $membership['price'] ?? '' );

@@ -77,12 +77,12 @@ class RHCM_Paysuite {
         return 'QMAPP' . str_pad( $appId, 5, '0', STR_PAD_LEFT );
     }
 
-    public static function buildCustomerPayload( int $appId, array $f ): array {
+    public static function buildCustomerPayload( string $customerRef, array $f ): array {
         $holderName = substr( trim( preg_replace( '/[^A-Za-z0-9 ]/', '', $f['account_holder'] ) ), 0, 18 );
         return [
             'Email'             => $f['email'],
             'Title'             => $f['title'] ?? '',
-            'CustomerRef'       => self::makeCustomerRef( $appId ),
+            'CustomerRef'       => $customerRef,
             'FirstName'         => $f['first_name'],
             'Surname'           => $f['last_name'],
             'Line1'             => $f['address_line1'],
