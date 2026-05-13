@@ -29,10 +29,9 @@ class RHCM_Admin {
         add_submenu_page( 'rhcm', 'Courses',    'Courses',    'manage_options', 'rhcm-courses',    [ $this, 'page_courses_tabbed' ] );
         add_submenu_page( 'rhcm', 'Membership', 'Membership', 'manage_options', 'rhcm-membership', [ $this, 'page_membership_tabbed' ] );
         add_submenu_page( 'rhcm', 'Bookings',   'Bookings',   'manage_options', 'rhcm-bookings',   [ $this, 'page_bookings' ] );
-        // Hidden pages — accessible via direct URL but not listed in the sidebar
-        add_submenu_page( 'rhcm-hidden', 'Discount Codes',  '', 'manage_options', 'rhcm-discounts',       [ $this, 'page_discounts' ] );
-        add_submenu_page( 'rhcm-hidden', 'Category Images', '', 'manage_options', 'rhcm-category-images', [ $this, 'page_category_images' ] );
-        add_submenu_page( 'rhcm-hidden', 'Help',            '', 'manage_options', 'rhcm-settings',        [ $this, 'page_settings' ] );
+        add_submenu_page( 'rhcm', 'Discount Codes',     'Discount Codes',     'manage_options', 'rhcm-discounts',       [ $this, 'page_discounts' ] );
+        add_submenu_page( 'rhcm', 'Category Images',    'Category Images',    'manage_options', 'rhcm-category-images', [ $this, 'page_category_images' ] );
+        add_submenu_page( 'rhcm', 'Shortcodes &amp; Help', 'Shortcodes &amp; Help', 'manage_options', 'rhcm-settings',  [ $this, 'page_settings' ] );
     }
 
     // ── Tab nav helpers ───────────────────────────────────────────────────────
