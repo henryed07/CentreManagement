@@ -1287,8 +1287,8 @@
 }
 .rhcm-join-option-price {
     color: var(--rhcm-gold);
-    font-weight: 800;
-    font-size: 1.05rem;
+    font-weight: 700;
+    font-size: .92rem;
     white-space: nowrap;
     text-align: right;
     flex-shrink: 0;
